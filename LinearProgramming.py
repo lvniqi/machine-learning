@@ -25,7 +25,7 @@ def residuals(p, y, x):
     return y - fake_func(p, x)
 '''
 #随机选了9个点，作为x
-x = np.linspace(0, 1, 9)
+x = np.linspace(0, 1, 12)
 #画图的时候需要的“连续”的很多个点
 x_show = np.linspace(0, 1, 1000)
  

@@ -75,12 +75,11 @@ def vandermonde_matrix(X, Y, order=1):
 
 
 if __name__=="__main__":
-    pass
     X, Y = randData()
     #theta = vandermonde_matrix(X, Y, order=1)
     theta = LS_line(X,Y)
     #theta = LS_sgd(X,Y)
-    
+
     # 画出数据点与拟合曲线
     plt.figure()
     plt.plot(X,Y,linestyle='',marker='.')
