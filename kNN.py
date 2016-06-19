@@ -12,32 +12,33 @@ import os
 
 #  knn分类器
 def kNNClassify(new_input, data_set, labels, k):
-    num_samples = data_set.shape[0]  # shape[0] stands for the num of row
+    dataset_len = data_set.shape[0]  # 用第一维数据长度代表数据个数
 
     # 第一步 计算欧氏距离
-    # tile(A, reps): Construct an array by repeating A reps times  
-    # the following copy num_samples rows for dataSet
-    diff = np.tile(new_input, (num_samples, 1)) - data_set  # Subtract element-wise
-    squaredDiff = diff ** 2  # squared for the subtract
-    squaredDist = np.sum(squaredDiff, axis=1)  # sum is performed by row
-    distance = squaredDist ** 0.5
+    # tile(A, reps): Construct an array by repeating A reps times
+    # 复制n次，然后相减
+    diff = np.tile(new_input, (dataset_len, 1)) - data_set  # Subtract element-wise
+    squared_diff = diff ** 2  # 将差平方
+    squared_dist = np.sum(squared_diff, axis=1)  # 求和
+    distance = squared_dist ** 0.5  # 开根号
 
-    #  step 2: sort the distance
-    #  argsort() returns the indices that would sort an array in a ascending order
+    #  第二步 排序
+    #  argsort() 返回数组值从小到大的索引值
     sortedDistIndices = np.argsort(distance)
 
     classCount = {}  # define a dictionary (can be append element)
     for i in xrange(k):
-        #  step 3: choose the min k distance
+        #  step 3: 选择距离最小的k个点
         voteLabel = labels[sortedDistIndices[i]]
 
-        #  step 4: count the times labels occur
+        #  step 4: 计算类型计数
         # when the key voteLabel is not in dictionary classCount, get()  
         # will return 0  
         classCount[voteLabel] = classCount.get(voteLabel, 0) + 1
 
         #  step 5: the max voted class will return
     max_count = 0
+    # 计数最大的类型
     for key, value in classCount.items():
         if value > max_count:
             max_count = value
