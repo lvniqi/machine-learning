@@ -65,6 +65,7 @@ def img2vector(filename):
 def loadDataSet():
     ## step 1: Getting training set  
     print "---Getting training set..."
+    dir_now = os.getcwd()
     dataSetDir = 'E:/WORKSPACE/machine-learning/data/'
     trainingFileList = os.listdir(dataSetDir + 'trainingDigits')  # load the training set
     numSamples = len(trainingFileList)
