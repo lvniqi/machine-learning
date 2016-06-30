@@ -5,7 +5,7 @@ Created on Thu Jun 30 17:59:37 2016
 @author: lvniqi
 """
 
-from common import get_data_set, show_image
+from common import get_data_set, show_image, save_image
 import numpy as np
 
 data_set = get_data_set(0)
@@ -80,12 +80,12 @@ for row_pos in range(len(left)):
     row_right_max = right_max[row_pos]
     for pixel_pos in range(len(row_left)):
         depth = calculate_diff_bt((row_left, row_left_min, row_left_max), (row_right, row_right_min, row_right_max),
-                                     pixel_pos)
+                                  pixel_pos)
         my_result[row_pos][pixel_pos] = depth * 255 / 10
 
 data_set['my_result_4'] = my_result
-
+save_image(my_result, 'pixel bt method')
 show_image(data_set)
 if __name__ == '__main__':
-    #calculate_min_max(left)
+    # calculate_min_max(left)
     pass

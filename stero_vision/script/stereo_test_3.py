@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from common import get_data_set, show_image
+from common import get_data_set, show_image, save_image
 import numpy as np
 
 data_set = get_data_set(0)
@@ -44,5 +44,6 @@ for row_pos in range(len(left)):
 
 data_set['my_result'] = my_result
 show_image(data_set)
+save_image(my_result, 'pixel naive method')
 if __name__ == '__main__':
     pass

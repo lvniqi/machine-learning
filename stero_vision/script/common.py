@@ -49,5 +49,13 @@ def show_image(image, title=None):
         plt.show()
 
 
+def save_image(image, name='test'):
+    t = Image.fromarray(np.uint8(image))
+    t.save(get_data_folder('result') + name + '.jpg')
+
+
 if __name__ == '__main__':
-    show_image(get_data_set())
+    dataset = get_data_set()
+    left_img = dataset['left']
+    save_image(left_img)
+    show_image(dataset)
