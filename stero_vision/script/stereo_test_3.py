@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from PIL import Image
 from common import get_data_set, show_image
 import numpy as np
-import matplotlib.pyplot as plt
 
 data_set = get_data_set(0)
 # get data
@@ -24,7 +22,7 @@ def calculate_diff_naive(pixel_value, row_right, pixel_pos, d_max=10):
     """
     start_pos = (pixel_pos - d_max) if (pixel_pos - d_max) > 0 else 0
     row_right = row_right[start_pos:pixel_pos]
-    diff = map(lambda value: abs(value * 1.0 - pixel_value), row_right)
+    diff = map(lambda value: abs(value - pixel_value), row_right)
     diff = diff[::-1]  # 逆序
     data_min = 0
     for depth in range(len(diff)):
@@ -35,7 +33,7 @@ def calculate_diff_naive(pixel_value, row_right, pixel_pos, d_max=10):
     return data_min
 
 
-# 扫描左图像素
+# 扫描像素
 for row_pos in range(len(left)):
     row_left = left[row_pos]
     row_right = right[row_pos]
