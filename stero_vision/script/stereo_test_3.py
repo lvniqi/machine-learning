@@ -25,7 +25,7 @@ def calculate_diff_naive(pixel_value, row_right, pixel_pos, d_max=10):
     start_pos = (pixel_pos - d_max) if (pixel_pos - d_max) > 0 else 0
     row_right = row_right[start_pos:pixel_pos]
     diff = map(lambda value: abs(value * 1.0 - pixel_value), row_right)
-    diff = diff[::-1]  # 逆序 否则是反的
+    diff = diff[::-1]  # 逆序
     data_min = 0
     for depth in range(len(diff)):
         if diff[depth] < diff[data_min]:
@@ -39,10 +39,8 @@ for row_pos in range(len(left)):
     row_right = right[row_pos]
     for pixel_pos in range(len(row_left)):
         pixel = row_left[pixel_pos]
-        depth = calculate_diff_naive(pixel,row_right,pixel_pos)
-        my_result[row_pos][pixel_pos] = depth*255/10
-        # pixel = 0
-        # print pixel_count
+        depth = calculate_diff_naive(pixel, row_right, pixel_pos)
+        my_result[row_pos][pixel_pos] = depth * 255 / 10
 
 data_set['my_result'] = my_result
 show_image(data_set)
