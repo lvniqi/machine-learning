@@ -28,6 +28,8 @@ def calculate_diff_naive(pixel_value, row_right, pixel_pos, d_max=10):
     diff = diff[::-1]  # 逆序
     data_min = 0
     for depth in range(len(diff)):
+        if diff[data_min] == 0:
+            break
         if diff[depth] < diff[data_min]:
             data_min = depth
     return data_min
