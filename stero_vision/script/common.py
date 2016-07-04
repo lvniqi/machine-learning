@@ -18,9 +18,9 @@ def get_data_folder(sub_folder='barn2'):
 
 def get_data_set(pos=0):
     dataset = {}
-    img_L = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png').convert('L'), 'f')
-    img_R = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im6.png').convert('L'), 'f')
-    img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp6.png').convert('L'), 'f')
+    img_L = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png').convert('L'), dtype=np.int16)
+    img_R = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im6.png').convert('L'), dtype=np.int16)
+    img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp6.png').convert('L'), dtype=np.int16)
     dataset['left'] = img_L
     dataset['right'] = img_R
     dataset['result'] = img_result

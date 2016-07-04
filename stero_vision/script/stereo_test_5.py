@@ -72,6 +72,6 @@ for row_pos in range(row_length):
         depth = calculate_diff_window(left_window, right_rows, pixel_pos,d_max)
         my_result[row_pos][pixel_pos] = depth * 255 / 48
 
-data_set['my_result_4'] = my_result
+data_set['my_result_5'] = my_result
 save_image(my_result, 'window method')
 show_image(data_set)
