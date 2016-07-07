@@ -109,9 +109,10 @@ if __name__ == '__main__':
     import time
 
     window_size = 13
-    d_max = 10
+    d_max = 15
     tt = time.time()
     stereo = StereoVisionBM1(left, right, window_size, d_max)
+
     stereo.get_sad_all()
     my_result = stereo.get_result()
     my_result = my_result * 255 / d_max
