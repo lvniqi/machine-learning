@@ -19,7 +19,6 @@ class StereoVisionBM1:
             self.left_extend = self.make_border_rgb(self.left, window_size, d_max)
             self.right_extend = self.make_border_rgb(self.right, window_size, d_max)
         else:
-
             (self.row_length, self.column_length) = left.shape
             self.left_extend = self.make_border(self.left, window_size, d_max)
             self.right_extend = self.make_border(self.right, window_size, d_max)
