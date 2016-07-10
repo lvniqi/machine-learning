@@ -28,7 +28,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
                 for d in np.arange(self.d_max):
                     E_d = sad_row[column][d]
                     # 不同深度 平滑度惩罚 系数3
-                    p = 2
+                    p = 0.1*self.window_size*self.window_size
                     E_s = p * np.abs(d - last_disparity)
                     # 上方的视差
                     E_s_2 = 0 if row == 0 else p * np.abs(d - self.my_result[row - 1][column])
@@ -56,7 +56,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
                 for d in np.arange(self.d_max):
                     e_d = sad_row[column][d]
                     # 不同深度 平滑度惩罚 系数3
-                    p = 2
+                    p = 0.1*self.window_size*self.window_size
                     e_s = p * np.abs(d - last_disparity)
                     # 下侧的视差
                     e_s_2 = 0 if row == self.row_length - 1 else p * np.abs(d - self.my_result[row + 1][column])
@@ -81,8 +81,8 @@ if __name__ == '__main__':
     result = data_set['result']
     import time
 
-    window_size = 5
-    d_max = 20
+    window_size = 7
+    d_max = 15
     tt = time.time()
     stereo = StereoVisionBM_DP(left, right, window_size, d_max)
     stereo.compute_cost()
