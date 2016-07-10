@@ -9,7 +9,7 @@ from common import get_data_set, show_image, save_image
 import numpy as np
 
 
-class StereoVisionBM1:
+class StereoVisionBM2:
     def __init__(self, left, right, window_size=13, d_max=10, is_color=False):
         self.left = left
         self.right = right
@@ -26,8 +26,7 @@ class StereoVisionBM1:
         self.window_size = window_size
         self.d_max = d_max
 
-        sad_size = [d_max, ]
-        sad_size.extend((self.row_length, self.column_length))
+        sad_size = [self.row_length, self.column_length,d_max, ]
         # sad 计算结果
         self.sad_result = np.zeros(sad_size)
         # 代价计算
@@ -75,7 +74,7 @@ class StereoVisionBM1:
         :return: 计算结果
         """
         column_length = self.right.shape[1]
-        return np.absolute(self.left - self.right_extend[:, d_max - d:column_length + d_max - d])
+        return np.absolute(self.left - self.right_extend[:, self.d_max - d:column_length + self.d_max - d])
 
     # Matching cost computation
     def compute_cost(self):
@@ -99,7 +98,7 @@ class StereoVisionBM1:
                     diff_window = diff[top:bottom, left:right]
 
                     sad = np.sum(diff_window)
-                    self.sad_result[d][row][column] = sad
+                    self.sad_result[row][column][d] = sad
         return self.sad_result
 
     # Disparity computation
@@ -108,7 +107,7 @@ class StereoVisionBM1:
             for column in np.arange(self.column_length):
                 min_sad = 0
                 for d in np.arange(1, self.d_max):
-                    if self.sad_result[min_sad][row][column] > self.sad_result[d][row][column]:
+                    if self.sad_result[row][column][min_sad] > self.sad_result[row][column][d]:
                         min_sad = d
                 self.my_result[row][column] = min_sad
         return self.my_result
@@ -124,13 +123,15 @@ if __name__ == '__main__':
     result = data_set['result']
     import time
 
-    window_size = 13
+    window_size = 11
     d_max = 15
     tt = time.time()
-    stereo = StereoVisionBM1(left, right, window_size, d_max)
+    stereo = StereoVisionBM2(left, right, window_size, d_max)
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
     my_result = my_result * 255 / d_max
     data_set['my_result_7'] = my_result
     show_image(data_set)
+    print time.time() - tt
+    save_image(my_result, 'window method 7')
