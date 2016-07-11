@@ -138,7 +138,7 @@ if __name__ == '__main__':
     result = data_set['result']
     import time
 
-    window_size = 13
+    window_size = 5
     d_max = 15
     tt = time.time()
     stereo = StereoVisionBM1(left, right, window_size, d_max)
@@ -160,3 +160,4 @@ if __name__ == '__main__':
     my_result = my_result * 255 / d_max
     data_set['my_result_6'] = my_result
     show_image(data_set,is_color=True)
+    save_image(my_result, 'window method 6')

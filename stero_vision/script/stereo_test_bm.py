@@ -7,6 +7,7 @@ Created on Sun Jul 10 17:51:18 2016
 
 from common import get_data_set, show_image, save_image
 import numpy as np
+from scipy.ndimage import filters
 
 
 class StereoVisionBM2:
@@ -26,7 +27,7 @@ class StereoVisionBM2:
         self.window_size = window_size
         self.d_max = d_max
 
-        sad_size = [self.row_length, self.column_length,d_max, ]
+        sad_size = [self.row_length, self.column_length, d_max, ]
         # sad 计算结果
         self.sad_result = np.zeros(sad_size)
         # 代价计算
@@ -73,13 +74,12 @@ class StereoVisionBM2:
         :param d: 深度d
         :return: 计算结果
         """
-        column_length = self.right.shape[1]
-        return np.absolute(self.left - self.right_extend[:, self.d_max - d:column_length + self.d_max - d])
+        return np.absolute(self.left - self.right_extend[:, self.d_max - d:self.column_length + self.d_max - d])
 
     # Matching cost computation
     def compute_cost(self):
         for d in range(self.d_max):
-            self.diff[d] = self.compute_cost_d(d)
+            self.diff[d] = self.gaussian_filter(self.compute_cost_d(d))
         return self.diff
 
     # Cost aggregation
@@ -99,6 +99,9 @@ class StereoVisionBM2:
 
                     sad = np.sum(diff_window)
                     self.sad_result[row][column][d] = sad
+
+
+
         return self.sad_result
 
     # Disparity computation
@@ -110,10 +113,64 @@ class StereoVisionBM2:
                     if self.sad_result[row][column][min_sad] > self.sad_result[row][column][d]:
                         min_sad = d
                 self.my_result[row][column] = min_sad
+        # self.post_processing()
         return self.my_result
 
-    # Disparity refinement
+    @staticmethod
+    def gaussian_filter(image_in, sigma=1.5):
+        return filters.gaussian_filter(image_in, sigma)
 
+        # Disparity refinement
+
+    @staticmethod
+    def get_window(color_window, window_size):
+        result_window = np.zeros(color_window.shape)
+        row_start = color_window.shape[0] / 2
+        column_start = color_window.shape[1] / 2
+        pixel_mid = color_window[row_start][column_start]
+
+        def get_window_line():
+            # 记录行差异
+            diff_row = np.absolute(row_pos - row_start)
+            # 找到像素标记
+            find_pixel = False
+            # 向左搜索
+            for column_pos in np.arange(column_start, -1, -1):
+                if row[column_pos] == pixel_mid:
+                    result_window[row_pos][column_pos] = window_size
+                    find_pixel = True
+                else:
+                    break
+            # 向右搜索
+            for column_pos in np.arange(column_start, color_window.shape[1], 1):
+                if row[column_pos] == pixel_mid:
+                    result_window[row_pos][column_pos] = window_size
+                    find_pixel = True
+                else:
+                    break
+            return find_pixel
+
+        # 向上搜索
+        for row_pos in np.arange(row_start, -1, -1):
+            row = color_window[row_pos]
+            if not get_window_line():
+                break
+        # 向下搜索
+        for row_pos in np.arange(row_start, color_window.shape[0], 1):
+            row = color_window[row_pos]
+            if not get_window_line():
+                break
+        # 其他区域赋值
+        for row_pos in np.arange(color_window.shape[0]):
+            # 记录行差异
+            diff_row = np.absolute(row_pos - row_start)
+            for column_pos in np.arange(color_window.shape[1]):
+                if result_window[row_pos][column_pos] != 0:
+                    continue
+                diff_column = np.absolute(column_pos - column_start)
+                result_window[row_pos][column_pos] = (window_size - 1) / (diff_column + diff_row)
+
+        return result_window
 
 if __name__ == '__main__':
     data_set = get_data_set(0)
