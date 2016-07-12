@@ -4,8 +4,69 @@ import os
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+import ctypes
 
 sub_folders = ['barn2', 'bull', 'cones']
+
+
+def get_dll_folder():
+    import sys
+    this_dir = os.getcwd().replace('\\', '/')
+    if '64-bit' in sys.version:
+        return this_dir + '/cpp_speed_up/x64/Release/cpp_speed_up.dll'
+    else:
+        return this_dir + '/cpp_speed_up/Release/cpp_speed_up.dll'
+
+
+def get_dll():
+    return ctypes.windll.LoadLibrary(get_dll_folder())
+
+
+def get_compute_cost_d_cpp_func(dll):
+    compute_cost_d = dll.compute_cost_d
+
+    compute_cost_d.restype = ctypes.c_void_p
+    compute_cost_d.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+    ]
+    return compute_cost_d
+    # compute_cost_d.
+
+
+def compute_cost_d_cpp(func, left, right):
+    strides = np.array(left.strides, dtype=np.int16)
+    shapes = np.array(left.shape, dtype=np.int16)
+    result = np.zeros(left.shape, dtype=np.int16)
+    func(result, left, right, strides, shapes)
+    return result
+
+
+def get_aggregate_cost_cpp_func(dll):
+    aggregate_cost = dll.aggregate_cost
+
+    aggregate_cost.restype = ctypes.c_void_p
+    aggregate_cost.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+        ctypes.c_int16,
+    ]
+    return aggregate_cost
+
+
+def aggregate_cost_cpp(func, diff, window_size):
+    shapes = np.array(diff.shape, dtype=np.int16)
+    diff_strides = np.array(diff.strides, dtype=np.int32)
+    result = np.zeros((diff.shape[1], diff.shape[2], diff.shape[0]), dtype=np.int32)
+    result_strides = np.array(result.strides, dtype=np.int32)
+    func(result, diff, diff_strides, result_strides, shapes, window_size)
+    return result
 
 
 def get_data_folder(sub_folder='barn2'):
@@ -44,7 +105,7 @@ def show_image(image, title=None, is_color=False):
             plt.subplot(x_axis, y_axis, pos)  # 将窗口分为x_axis行y_axis列四个子图
             plt.title(key)
             if is_color:
-                plt.imshow(np.array(image[key],dtype = np.uint8))
+                plt.imshow(np.array(image[key], dtype=np.uint8))
             else:
                 plt.imshow(image[key], plt.cm.gray, norm=plt.Normalize(vmin=0, vmax=255))
             pos += 1
@@ -54,7 +115,7 @@ def show_image(image, title=None, is_color=False):
             title = str(image.shape) + str(image.dtype)
         plt.title(title)
         if is_color:
-            plt.imshow(np.array(image,dtype = np.uint8))
+            plt.imshow(np.array(image, dtype=np.uint8))
         else:
             plt.imshow(image, plt.cm.gray, norm=plt.Normalize(vmin=0, vmax=255))
         plt.show()
@@ -66,12 +127,19 @@ def save_image(image, name='test'):
 
 
 if __name__ == '__main__':
+    dll = get_dll()
+    compute_cost_d = get_compute_cost_d_cpp_func(dll)
+    # test cpp speed up
+    left = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int16)
+    right = np.array([[-1, 2, 2], [4, 3, 3]], dtype=np.int16)
+    result = compute_cost_d_cpp(compute_cost_d, left, right)
+    print result
     # gray
-    dataset_t = get_data_set()
+    '''dataset_t = get_data_set()
     left_img = dataset_t['left']
     # save_image(left_img)
     show_image(dataset_t)
     # color
     dataset_t = get_data_set(is_color=True)
     left_img = dataset_t['left']
-    show_image(dataset_t,is_color=True)
+    show_image(dataset_t, is_color=True)'''

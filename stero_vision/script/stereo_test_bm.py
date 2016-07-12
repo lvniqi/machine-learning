@@ -5,7 +5,7 @@ Created on Sun Jul 10 17:51:18 2016
 @author: lvniqi
 """
 
-from common import get_data_set, show_image, save_image
+from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, aggregate_cost_cpp
 import numpy as np
 from scipy.ndimage import filters
 
@@ -29,13 +29,14 @@ class StereoVisionBM2:
 
         sad_size = [self.row_length, self.column_length, d_max, ]
         # sad 计算结果
-        self.sad_result = np.zeros(sad_size)
+        self.sad_result = np.zeros(sad_size, dtype=np.int32)
         # 代价计算
         diff_size = [d_max, ]
         diff_size.extend(self.left.shape)
-        self.diff = np.zeros(diff_size)
+        self.diff = np.zeros(diff_size, dtype=np.int16)
 
         self.is_color = is_color
+        self.aggregate_cost_cpp_func = get_aggregate_cost_cpp_func(get_dll())
 
     @staticmethod
     def make_border(image, window_size, d_max):
@@ -83,7 +84,15 @@ class StereoVisionBM2:
         return self.diff
 
     # Cost aggregation
-    def aggregate_cost(self):
+    def aggregate_cost(self,is_python = False):
+        if is_python:
+            self.sad_result = self.aggregate_cost_python()
+        else:
+            self.sad_result = aggregate_cost_cpp(self.aggregate_cost_cpp_func, self.diff, self.window_size)
+        return self.sad_result
+
+    # 使用python编写的代价聚合程序 低速但算法相同
+    def aggregate_cost_python(self):
         for d in range(self.d_max):
             diff = self.diff[d]
             for row in np.arange(self.row_length):
@@ -99,11 +108,7 @@ class StereoVisionBM2:
 
                     sad = np.sum(diff_window)
                     self.sad_result[row][column][d] = sad
-
-
-
         return self.sad_result
-
     # Disparity computation
     def get_result(self):
         for row in np.arange(self.row_length):
@@ -171,6 +176,7 @@ class StereoVisionBM2:
                 result_window[row_pos][column_pos] = (window_size - 1) / (diff_column + diff_row)
 
         return result_window
+
 
 if __name__ == '__main__':
     data_set = get_data_set(0)
