@@ -5,7 +5,8 @@ Created on Sun Jul 10 17:51:18 2016
 @author: lvniqi
 """
 
-from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, aggregate_cost_cpp
+from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, compute_cost_d_cpp, \
+    aggregate_cost_cpp, get_compute_cost_d_cpp_func
 import numpy as np
 from scipy.ndimage import filters
 
@@ -36,7 +37,9 @@ class StereoVisionBM2:
         self.diff = np.zeros(diff_size, dtype=np.int16)
 
         self.is_color = is_color
-        self.aggregate_cost_cpp_func = get_aggregate_cost_cpp_func(get_dll())
+        self.dll = get_dll()
+        self.compute_cost_d_cpp_func = get_compute_cost_d_cpp_func(self.dll)
+        self.aggregate_cost_cpp_func = get_aggregate_cost_cpp_func(self.dll)
 
     @staticmethod
     def make_border(image, window_size, d_max):
@@ -75,7 +78,10 @@ class StereoVisionBM2:
         :param d: 深度d
         :return: 计算结果
         """
-        return np.absolute(self.left - self.right_extend[:, self.d_max - d:self.column_length + self.d_max - d])
+        return compute_cost_d_cpp(self.compute_cost_d_cpp_func, self.left,
+                                  self.right_extend[:, self.d_max - d:self.column_length + self.d_max - d].copy())
+        # python版本
+        # return np.absolute(self.left - self.right_extend[:, self.d_max - d:self.column_length + self.d_max - d])
 
     # Matching cost computation
     def compute_cost(self):
@@ -84,7 +90,7 @@ class StereoVisionBM2:
         return self.diff
 
     # Cost aggregation
-    def aggregate_cost(self,is_python = False):
+    def aggregate_cost(self, is_python=False):
         if is_python:
             self.sad_result = self.aggregate_cost_python()
         else:
@@ -107,8 +113,11 @@ class StereoVisionBM2:
                     diff_window = diff[top:bottom, left:right]
 
                     sad = np.sum(diff_window)
-                    self.sad_result[row][column][d] = sad
+                    # 归一化
+                    sad_normal = sad * 100 / (bottom - top) / (right - left)
+                    self.sad_result[row][column][d] = sad_normal
         return self.sad_result
+
     # Disparity computation
     def get_result(self):
         for row in np.arange(self.row_length):

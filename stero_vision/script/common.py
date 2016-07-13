@@ -23,6 +23,11 @@ def get_dll():
 
 
 def get_compute_cost_d_cpp_func(dll):
+    """
+    代价计算
+    :param dll: dll文件
+    :return: 代价计算函数
+    """
     compute_cost_d = dll.compute_cost_d
 
     compute_cost_d.restype = ctypes.c_void_p
@@ -36,8 +41,32 @@ def get_compute_cost_d_cpp_func(dll):
     return compute_cost_d
     # compute_cost_d.
 
+def get_compute_cost_bt_d_cpp_func(dll):
+    """
+    代价计算bt版本
+    :param dll: dll文件
+    :return: 代价计算函数bt版本
+    """
+    compute_cost_bt_d = dll.compute_cost_bt_d
+
+    compute_cost_bt_d.restype = ctypes.c_void_p
+    compute_cost_bt_d.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+    ]
+    return compute_cost_bt_d
 
 def compute_cost_d_cpp(func, left, right):
+    """
+    代价计算python包装
+    :param func:代价计算函数
+    :param left:左图
+    :param right:右图
+    :return:结果
+    """
     strides = np.array(left.strides, dtype=np.int16)
     shapes = np.array(left.shape, dtype=np.int16)
     result = np.zeros(left.shape, dtype=np.int16)
@@ -45,7 +74,16 @@ def compute_cost_d_cpp(func, left, right):
     return result
 
 
+
+
+
+
 def get_aggregate_cost_cpp_func(dll):
+    """
+    代价聚合函数
+    :param dll: dll文件
+    :return: 代价聚合函数
+    """
     aggregate_cost = dll.aggregate_cost
 
     aggregate_cost.restype = ctypes.c_void_p
@@ -61,6 +99,13 @@ def get_aggregate_cost_cpp_func(dll):
 
 
 def aggregate_cost_cpp(func, diff, window_size):
+    """
+    代价聚合python包装
+    :param func: 代价聚合函数
+    :param diff: 左右图差异
+    :param window_size: 窗口大小
+    :return: 聚合后的代价值
+    """
     shapes = np.array(diff.shape, dtype=np.int16)
     diff_strides = np.array(diff.strides, dtype=np.int32)
     result = np.zeros((diff.shape[1], diff.shape[2], diff.shape[0]), dtype=np.int32)

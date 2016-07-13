@@ -4,25 +4,8 @@
 #include "stdafx.h"
 #include "cpp_speed_up.h"
 #include "stdio.h"
-int __stdcall test1(int a, int b) {
-	return a + b;
-}
 
-double __stdcall test2(double a[], int strides[], int shapes[]) {
-	double sum = 0;
-	int i, j, M, N, S0, S1;
-	M = shapes[0]; N = shapes[1];
-	S0 = strides[0] / sizeof(double);
-	S1 = strides[1] / sizeof(double);
-
-	for (i = 0; i<M; i++) {
-		for (j = 0; j<N; j++) {
-			sum += a[i*S0 + j*S1];
-		}
-	}
-	return sum;
-}
-
+//计算单点代价
 void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]) {
 	//row length
 	int row_length = shapes[0];
@@ -44,6 +27,53 @@ void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16
 	}
 }
 
+//计算单点代价 BT版本
+void __stdcall compute_cost_bt_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+	//row and column size
+	int S0 = strides[0] / sizeof(INT16);
+	int S1 = strides[1] / sizeof(INT16);
+	for (int row = 0; row < row_length; row++) {
+		INT16 * left_row = &(left[row*S0]);
+		INT16 * right_row = &(right[row*S0]);
+		INT16 * result_row = &(result[row*S0]);
+		for (int column = 0; column < column_length; column++) {
+			int pos =column*S1;
+			int right_pixel_l, right_pixel_r, right_pixel;
+			int right_pixel_min, right_pixel_max;
+			right_pixel = right[pos];
+			if (column == 0) {
+				right_pixel_l = right[pos];
+				right_pixel_r = right[pos+1];
+			}
+			else if (column == column_length - 1) {
+				right_pixel_l = right[pos - 1];
+				right_pixel_r = right[pos];
+			}
+			else {
+				right_pixel_l = right[pos - 1];
+				right_pixel_r = right[pos + 1];
+			}
+			//两侧中点
+			right_pixel_l = (right_pixel_l + right_pixel) / 2;
+			right_pixel_r = (right_pixel_r + right_pixel) / 2;
+			//三个值的最小最大值
+			right_pixel_min = min(right_pixel_l, right_pixel_r);
+			right_pixel_min = min(right_pixel_min, right_pixel);
+			right_pixel_max = max(right_pixel_l, right_pixel_r);
+			right_pixel_max = max(right_pixel_max, right_pixel);
+			//最终结果
+			int diff = max(0, left_row[pos] - right_pixel_max);
+			diff = max(diff, right_pixel_min - left_row[pos]);
+			result_row[pos] = diff;
+		}
+	}
+}
+
+//代价聚合
 void __stdcall aggregate_cost(INT32 result[], INT16 diff[],INT32 diff_strides[], INT32 result_strides[], INT16 shapes[], INT16 window_size) {
 	//deep length
 	int d_max = shapes[0];
@@ -96,8 +126,11 @@ void __stdcall aggregate_cost(INT32 result[], INT16 diff[],INT32 diff_strides[],
 						sad += diff_this_deep[i*S_row + j*S_column];
 					}
 				}
-				result[row*S_row_r + column*S_column_r + d*S_deep_r] = sad;
+				//归一化
+				INT32 sad_normal = 100 * sad / (bottom - top) / (right - left);
+				result[row*S_row_r + column*S_column_r + d*S_deep_r] = sad_normal;
 			}
 		}
 	}
 }
+
