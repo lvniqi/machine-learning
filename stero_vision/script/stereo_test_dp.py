@@ -5,57 +5,36 @@ Created on Mon Jul 11 00:06:27 2016
 @author: lvniqi
 """
 
-from common import get_data_set, show_image, save_image
+from common import get_data_set, show_image, save_image, get_dp_forward_cpp_func, dp_forward_cpp
 from stereo_test_bm import StereoVisionBM2
 import numpy as np
 
 
 class StereoVisionBM_DP(StereoVisionBM2):
     def get_result_forward(self):
+        self.dp_forward_cpp_func = get_dp_forward_cpp_func(self.dll)
 
         # 代价矩阵
         cost = np.zeros((self.column_length, self.d_max), dtype=np.float32)
         # 结果矩阵
         result_array = np.zeros((self.column_length, self.d_max), dtype=np.int16)
 
-        # 代价计算函数
-        def cost_func(sad_row, column):
-            # 第一个数据
-            if column == 0:
-                for d in range(self.d_max):
-                    # 代价等于 数据项
-                    cost_t = sad_row[column][d]
-                    cost[column][d] = cost_t
-            # 其余
-            else:
-                for d in range(self.d_max):
-                    # 代价等于 数据项 + 约束项
-                    # 约束系数
-                    p = 5
-                    # 上次的最佳视差
-                    min_last = 0
-                    # 总体代价结果
-                    cost_result = np.inf
-                    for last_cost in range(self.d_max):
-                        # 上次代价 + 视差偏差*约束系数 + 这次代价
-                        cost_t = cost[column - 1][last_cost] + np.abs(d - last_cost) * p + sad_row[column][d]
-                        if cost_t < cost_result:
-                            cost_result = cost_t
-                            min_last = last_cost
-                    cost[column][d] = cost_t
-                    result_array[column][d] = min_last
-
         for row in np.arange(self.row_length):
             print "row: ", row
             sad_row = self.sad_result[row]
+            sad_row = np.array(sad_row, dtype=np.int16)
+
             for column in range(self.column_length):
-                cost_func(sad_row, column)
+                dp_forward_cpp(self.dp_forward_cpp_func, result_array, cost, sad_row, self.column_length, self.d_max, 5)
+                #cost_func(sad_row, column)
 
             # 统计结果 最后一个最小的视差
             min_d_last = np.argmin(cost[-1])
             self.my_result[row][-1] = min_d_last
+            min_d = min_d_last
             for column in range(self.column_length - 1, 0, -1):
-                self.my_result[row][column - 1] = result_array[column][min_d_last]
+                self.my_result[row][column - 1] = result_array[column][min_d]
+                min_d = result_array[column][min_d]
         return self.my_result.copy()
 
     def get_result_reverse(self):
@@ -136,14 +115,15 @@ class StereoVisionBM_DP(StereoVisionBM2):
 
     def get_result(self):
         forward = self.get_result_forward()
-        reverse = self.get_result_reverse()
+        return forward
+        '''reverse = self.get_result_reverse()
         up = self.get_result_up()
         down = self.get_result_down()
         for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
                 self.my_result[row][column] = np.median(
                     (reverse[row][column], forward[row][column], down[row][column], up[row][column]))
-        return self.my_result.copy()
+        return self.my_result.copy()'''
 
 
 if __name__ == '__main__':

@@ -41,6 +41,7 @@ def get_compute_cost_d_cpp_func(dll):
     return compute_cost_d
     # compute_cost_d.
 
+
 def get_compute_cost_bt_d_cpp_func(dll):
     """
     代价计算bt版本
@@ -59,6 +60,7 @@ def get_compute_cost_bt_d_cpp_func(dll):
     ]
     return compute_cost_bt_d
 
+
 def compute_cost_d_cpp(func, left, right):
     """
     代价计算python包装
@@ -72,10 +74,6 @@ def compute_cost_d_cpp(func, left, right):
     result = np.zeros(left.shape, dtype=np.int16)
     func(result, left, right, strides, shapes)
     return result
-
-
-
-
 
 
 def get_aggregate_cost_cpp_func(dll):
@@ -112,6 +110,40 @@ def aggregate_cost_cpp(func, diff, window_size):
     result_strides = np.array(result.strides, dtype=np.int32)
     func(result, diff, diff_strides, result_strides, shapes, window_size)
     return result
+
+
+def get_dp_forward_cpp_func(dll):
+    """
+    动态规划搜索函数
+    :param dll: dll文件
+    :return: 动态规划搜索函数
+    """
+    dp_search_forward = dll.DP_search_forward
+
+    dp_search_forward.restype = ctypes.c_void_p
+    dp_search_forward.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_float,
+    ]
+    return dp_search_forward
+
+
+def dp_forward_cpp(func, result, cost, sad_row, column_length, d_max, p):
+    """
+    动态规划向前python包装
+    :param func: 动态规划搜索函数
+    :param result: 结果矩阵
+    :param cost:代价矩阵
+    :param sad_row: 聚合后单行数据
+    :param column_length:行宽度
+    :param d_max:搜索最大视差
+    :param p:约束参数
+    """
+    func(result, cost, sad_row, column_length, d_max, p)
 
 
 def get_data_folder(sub_folder='barn2'):
