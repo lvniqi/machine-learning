@@ -21,7 +21,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
 
         for row in np.arange(self.row_length):
             print "row: ", row
-            sad_row = self.sad_result[row]
+            sad_row = self.sad_left_result[row]
             sad_row = np.array(sad_row, dtype=np.int16)
 
             for column in range(self.column_length):
@@ -39,7 +39,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
 
     def get_result_reverse(self):
         for row in np.arange(self.row_length - 1, -1, -1):
-            sad_row = self.sad_result[row]
+            sad_row = self.sad_left_result[row]
             last_disparity = 0
             # 首先 得到第一个像素的深度值
             for d in np.arange(1, self.d_max):
@@ -68,7 +68,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
             last_disparity = 0
             # 首先 得到第一个像素的深度值
             for d in np.arange(1, self.d_max):
-                if self.sad_result[0][column][last_disparity] > self.sad_result[0][column][d]:
+                if self.sad_left_result[0][column][last_disparity] > self.sad_left_result[0][column][d]:
                     last_disparity = d
             self.my_result[0][column] = last_disparity
             # 遍历剩下的像素值
@@ -77,7 +77,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
                 last_ed_es = np.inf
                 result_d = 0
                 for d in np.arange(self.d_max):
-                    e_d = self.sad_result[row][column][d]
+                    e_d = self.sad_left_result[row][column][d]
                     # 不同深度 平滑度惩罚 系数3
                     p = 0.1 * self.window_size * self.window_size
                     e_s = p * np.abs(d - last_disparity)
@@ -93,7 +93,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
             last_disparity = 0
             # 首先 得到第一个像素的深度值
             for d in np.arange(1, self.d_max):
-                if self.sad_result[-1][column][last_disparity] > self.sad_result[-1][column][d]:
+                if self.sad_left_result[-1][column][last_disparity] > self.sad_left_result[-1][column][d]:
                     last_disparity = d
             self.my_result[-1][column] = last_disparity
             # 遍历剩下的像素值
@@ -102,7 +102,7 @@ class StereoVisionBM_DP(StereoVisionBM2):
                 last_ed_es = np.inf
                 result_d = 0
                 for d in np.arange(self.d_max):
-                    e_d = self.sad_result[row][column][d]
+                    e_d = self.sad_left_result[row][column][d]
                     # 不同深度 平滑度惩罚 系数3
                     p = 0.1 * self.window_size * self.window_size
                     e_s = p * np.abs(d - last_disparity)

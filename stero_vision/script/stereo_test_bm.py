@@ -30,12 +30,13 @@ class StereoVisionBM2:
 
         sad_size = [self.row_length, self.column_length, d_max, ]
         # sad 计算结果
-        self.sad_result = np.zeros(sad_size, dtype=np.int32)
+        self.left_right_check = np.zeros((self.row_length, self.column_length), dtype=np.int32)
+        self.sad_left_result = np.zeros(sad_size, dtype=np.int32)
+        self.sad_right_result = np.zeros(sad_size, dtype=np.int32)
         # 代价计算
         diff_size = [d_max, ]
         diff_size.extend(self.left.shape)
-        self.diff = np.zeros(diff_size, dtype=np.int16)
-
+        self.left_diff = np.zeros(diff_size, dtype=np.int16)
         self.is_color = is_color
         self.dll = get_dll()
         self.compute_cost_d_cpp_func = get_compute_cost_d_cpp_func(self.dll)
@@ -86,21 +87,30 @@ class StereoVisionBM2:
     # Matching cost computation
     def compute_cost(self):
         for d in range(self.d_max):
-            self.diff[d] = self.gaussian_filter(self.compute_cost_d(d))
-        return self.diff
+            self.left_diff[d] = self.gaussian_filter(self.compute_cost_d(d))
+        return self.left_diff
 
     # Cost aggregation
     def aggregate_cost(self, is_python=False):
         if is_python:
-            self.sad_result = self.aggregate_cost_python()
+            self.sad_left_result = self.aggregate_cost_python()
         else:
-            self.sad_result = aggregate_cost_cpp(self.aggregate_cost_cpp_func, self.diff, self.window_size)
-        return self.sad_result
+            self.sad_left_result = aggregate_cost_cpp(self.aggregate_cost_cpp_func, self.left_diff, self.window_size)
+
+        for i in np.arange(self.d_max):
+            left_sad = self.sad_left_result[:, :, i].copy()
+            left_sad = left_sad[:, i:]
+            for t in np.arange(i):
+                left_sad = np.column_stack((left_sad, left_sad[:, -1]))
+            right_sad = left_sad
+            self.sad_right_result[:, :, i] = right_sad
+
+        return (self.sad_left_result, self.sad_right_result)
 
     # 使用python编写的代价聚合程序 低速但算法相同
     def aggregate_cost_python(self):
         for d in range(self.d_max):
-            diff = self.diff[d]
+            diff = self.left_diff[d]
             for row in np.arange(self.row_length):
                 top = (row - self.window_size / 2) if (row - self.window_size / 2) > 0 else 0
                 bottom = (row + self.window_size / 2 + 1) if \
@@ -115,16 +125,20 @@ class StereoVisionBM2:
                     sad = np.sum(diff_window)
                     # 归一化
                     sad_normal = sad * 100 / (bottom - top) / (right - left)
-                    self.sad_result[row][column][d] = sad_normal
-        return self.sad_result
+                    self.sad_left_result[row][column][d] = sad_normal
+        return self.sad_left_result
 
     # Disparity computation
-    def get_result(self):
+    def get_result(self, is_left=True):
+        if is_left:
+            used_sad_result = self.sad_left_result
+        else:
+            used_sad_result = self.sad_right_result
         for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
                 min_sad = 0
                 for d in np.arange(1, self.d_max):
-                    if self.sad_result[row][column][min_sad] > self.sad_result[row][column][d]:
+                    if used_sad_result[row][column][min_sad] > used_sad_result[row][column][d]:
                         min_sad = d
                 self.my_result[row][column] = min_sad
         # self.post_processing()
@@ -200,7 +214,7 @@ if __name__ == '__main__':
     tt = time.time()
     stereo = StereoVisionBM2(left, right, window_size, d_max)
     stereo.compute_cost()
-    stereo.aggregate_cost()
+    t_diff = stereo.aggregate_cost()
     my_result = stereo.get_result()
     my_result = my_result * 255 / d_max
     data_set['my_result_7'] = my_result

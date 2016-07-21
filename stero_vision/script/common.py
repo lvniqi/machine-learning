@@ -131,6 +131,24 @@ def get_dp_forward_cpp_func(dll):
     ]
     return dp_search_forward
 
+def get_dp_forward_cpp_func_fast(dll):
+    """
+    动态规划搜索函数
+    :param dll: dll文件
+    :return: 动态规划搜索函数
+    """
+    dp_search_forward2 = dll.DP_search_forward2
+
+    dp_search_forward2.restype = ctypes.c_void_p
+    dp_search_forward2.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_float,
+    ]
+    return dp_search_forward2
 
 def dp_forward_cpp(func, result, cost, sad_row, column_length, d_max, p):
     """

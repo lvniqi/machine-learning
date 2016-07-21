@@ -176,3 +176,40 @@ void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], 
 	}
 }
 
+void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p) {
+	
+	//第一个数据 没有约束项
+	for (int d = 0; d < d_max; d++) {
+		//代价等于 数据项
+		float cost_t = sad_row[0 * d_max + d];
+		cost[0 * d_max + d] = cost_t;
+	}
+	//遍历一行所有数据
+	for (int column = 1; column < column_length; column++) {
+		//遍历所有视差
+		for (int d = 0; d < d_max; d++) {
+			int pos = column * d_max + d;
+			//上次的最佳视差
+			int min_last = 0;
+			//总体代价结果
+			float cost_result = DBL_MAX;
+			//上一个点的视差
+			for (int last_pos = (d - 1<0?0:d-1); last_pos < (d + 2<d_max?d+2:d_max); last_pos++) {
+				//约束项
+				int disparity_diff = abs(d - last_pos);
+				int cost_disparity = p*disparity_diff;
+				// 代价等于 数据项 + 约束系数*约束项
+				float cost_now = sad_row[pos] + cost_disparity;
+				//代价合计
+				float cost_sum = cost_now + cost[(column - 1) * d_max + last_pos];
+				//取得最小值
+				if (cost_sum < cost_result) {
+					cost_result = cost_sum;
+					min_last = last_pos;
+				}
+			}
+			result[pos] = min_last;
+			cost[pos] = cost_result;
+		}
+	}
+}
