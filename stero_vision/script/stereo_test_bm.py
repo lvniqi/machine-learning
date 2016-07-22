@@ -30,7 +30,6 @@ class StereoVisionBM2:
 
         sad_size = [self.row_length, self.column_length, d_max, ]
         # sad 计算结果
-        self.left_right_check = np.zeros((self.row_length, self.column_length), dtype=np.int32)
         self.sad_left_result = np.zeros(sad_size, dtype=np.int32)
         self.sad_right_result = np.zeros(sad_size, dtype=np.int32)
         # 代价计算
@@ -142,7 +141,30 @@ class StereoVisionBM2:
                         min_sad = d
                 self.my_result[row][column] = min_sad
         # self.post_processing()
-        return self.my_result
+        return self.my_result.copy()
+
+    def left_right_check(self):
+        result = np.zeros((self.row_length, self.column_length), np.int16)
+        print "left:"
+        left = self.get_result(is_left=True)
+        print "right:"
+        right = self.get_result(is_left=False)
+        for row in np.arange(self.row_length):
+            left_row = left[row]
+            right_row = right[row]
+            result_row = result[row]
+            for column in np.arange(self.column_length):
+                # 左侧视差
+                disparity_left = left_row[column]
+                pos_right = column - disparity_left
+                if pos_right < 0:
+                    continue
+                # 右侧视差
+                disparity_right = right_row[pos_right]
+                # 得到遮挡/不稳定点
+                if disparity_left != disparity_right:
+                    result_row[column] = d_max
+        return result
 
     @staticmethod
     def gaussian_filter(image_in, sigma=1.5):
@@ -218,6 +240,12 @@ if __name__ == '__main__':
     my_result = stereo.get_result()
     my_result = my_result * 255 / d_max
     data_set['my_result_7'] = my_result
+
+    diff_result = stereo.left_right_check()
+    diff_result = diff_result * 255 / d_max
+    data_set['diff_result'] = diff_result
+    save_image(diff_result, 'diff_result')
+
     show_image(data_set)
     print time.time() - tt
     save_image(my_result, 'window method 7')
