@@ -6,7 +6,7 @@ Created on Sun Jul 10 17:51:18 2016
 """
 
 from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, compute_cost_d_cpp, \
-    aggregate_cost_cpp, get_compute_cost_d_cpp_func
+    aggregate_cost_cpp, get_compute_cost_d_cpp_func, get_result_cpp_func, get_result_cpp
 import numpy as np
 from scipy.ndimage import filters
 
@@ -129,22 +129,29 @@ class StereoVisionBM2:
 
     # Disparity computation
     def get_result(self, is_left=True):
+        result_cpp_func = get_result_cpp_func(self.dll)
+        temp_result = None
         if is_left:
+            temp_result = self.my_result
             used_sad_result = self.sad_left_result
         else:
+            temp_result = self.my_result.copy()
             used_sad_result = self.sad_right_result
-        for row in np.arange(self.row_length):
+
+
+        get_result_cpp(result_cpp_func, temp_result, used_sad_result)
+        '''for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
                 min_sad = 0
                 for d in np.arange(1, self.d_max):
                     if used_sad_result[row][column][min_sad] > used_sad_result[row][column][d]:
                         min_sad = d
-                self.my_result[row][column] = min_sad
-        # self.post_processing()
-        return self.my_result.copy()
+                self.my_result[row][column] = min_sad'''
+        return temp_result.copy()
 
+    # 左右视差检查
     def left_right_check(self):
-        result = np.zeros((self.row_length, self.column_length), np.int16)
+        self.left_right_result = np.zeros((self.row_length, self.column_length), np.int16)
         print "left:"
         left = self.get_result(is_left=True)
         print "right:"
@@ -152,7 +159,7 @@ class StereoVisionBM2:
         for row in np.arange(self.row_length):
             left_row = left[row]
             right_row = right[row]
-            result_row = result[row]
+            result_row = self.left_right_result[row]
             for column in np.arange(self.column_length):
                 # 左侧视差
                 disparity_left = left_row[column]
@@ -163,8 +170,27 @@ class StereoVisionBM2:
                 disparity_right = right_row[pos_right]
                 # 得到遮挡/不稳定点
                 if disparity_left != disparity_right:
-                    result_row[column] = d_max
+                    result_row[column] = abs(disparity_right - disparity_left)
+        result = self.left_right_result.copy()
+        result *= 255 / self.d_max
+
         return result
+
+    def post_processing(self):
+        for row in np.arange(self.row_length):
+            for column in np.arange(self.column_length):
+                if self.left_right_result[row][column]:
+                    left_pos = column - 2 if column - 2 >= 0 else 0
+                    right_pos = column + 3 if column + 3 <= self.column_length else self.column_length
+                    top_pos = row - 2 if row-2 >= 0 else 0
+                    bottom_pos = row + 3 if row + 3 <= self.row_length else self.row_length
+                    vote = np.zeros(self.d_max, np.int16)
+                    for i in np.arange(top_pos, bottom_pos):
+                        for j in np.arange(left_pos, right_pos):
+                            if self.left_right_result[i][j] == 0:
+                                vote[self.my_result[i][j]] += 1
+                    self.my_result[row][column] = np.argmax(vote)
+        return self.my_result.copy()
 
     @staticmethod
     def gaussian_filter(image_in, sigma=1.5):
@@ -244,8 +270,13 @@ if __name__ == '__main__':
     diff_result = stereo.left_right_check()
     diff_result = diff_result * 255 / d_max
     data_set['diff_result'] = diff_result
-    save_image(diff_result, 'diff_result')
+
+    post_result = stereo.post_processing()
+    post_result = post_result * 255 / d_max
+    data_set['post_result'] = post_result
 
     show_image(data_set)
     print time.time() - tt
+    save_image(diff_result, 'diff_result')
+    save_image(post_result, 'post_result')
     save_image(my_result, 'window method 7')

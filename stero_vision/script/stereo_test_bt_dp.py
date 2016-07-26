@@ -73,18 +73,14 @@ if __name__ == '__main__':
     import time
 
     window_size = 5
-    # window_size = 11
     d_max = 20
     tt = time.time()
     stereo = StereoVisionBM_DP_BT(left, right, window_size, d_max)
-    # stereo = StereoVisionBM_BT(left, right, window_size, d_max)
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
     my_result = my_result * 255 / d_max
     data_set['my_result_bt_dp'] = my_result
-    # data_set['my_result_bt_bm'] = my_result
     show_image(data_set)
     print time.time() - tt
     save_image(my_result, 'window method BT DP')
-    # save_image(my_result, 'window method BT BM')

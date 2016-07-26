@@ -131,6 +131,7 @@ def get_dp_forward_cpp_func(dll):
     ]
     return dp_search_forward
 
+
 def get_dp_forward_cpp_func_fast(dll):
     """
     动态规划搜索函数
@@ -150,6 +151,7 @@ def get_dp_forward_cpp_func_fast(dll):
     ]
     return dp_search_forward2
 
+
 def dp_forward_cpp(func, result, cost, sad_row, column_length, d_max, p):
     """
     动态规划向前python包装
@@ -162,6 +164,36 @@ def dp_forward_cpp(func, result, cost, sad_row, column_length, d_max, p):
     :param p:约束参数
     """
     func(result, cost, sad_row, column_length, d_max, p)
+
+
+def get_result_cpp_func(dll):
+    """
+    视差计算函数
+    :param dll: dll文件
+    :return: 视差计算函数
+    """
+    get_result = dll.get_result
+
+    get_result.restype = ctypes.c_void_p
+    get_result.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+    ]
+    return get_result
+
+
+def get_result_cpp(func, result, sad_diff):
+    """
+    视察计算python包装
+    :param func: 视差计算函数
+    :param result: 视差结果
+    :param sad_diff: 聚合后视差值
+    """
+    strides = np.array(sad_diff.strides, dtype=np.int32)
+    shapes = np.array(sad_diff.shape, dtype=np.int32)
+    func(result, sad_diff, strides, shapes)
 
 
 def get_data_folder(sub_folder='barn2'):

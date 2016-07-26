@@ -5,3 +5,4 @@ extern "C" _declspec(dllexport) void __stdcall compute_cost_bt_d(INT16 result[],
 extern "C" _declspec(dllexport) void __stdcall aggregate_cost(INT32 result[], INT16 diff[], INT32 diff_strides[], INT32 result_strides[], INT16 shapes[], INT16 window_size);
 extern "C" _declspec(dllexport) void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p);
 extern "C" _declspec(dllexport) void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p);
+extern "C" _declspec(dllexport) void __stdcall get_result(INT16 result[], INT32 sad_diff[], INT32 strides[], INT32 shapes[]);

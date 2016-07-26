@@ -135,6 +135,7 @@ void __stdcall aggregate_cost(INT32 result[], INT16 diff[],INT32 diff_strides[],
 		}
 	}
 }
+//动态规划
 void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p) {
 	//第一个数据 没有约束项
 	for (int d = 0; d < d_max; d++) {
@@ -175,7 +176,7 @@ void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], 
 		}
 	}
 }
-
+//动态规划 简化版
 void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p) {
 	
 	//第一个数据 没有约束项
@@ -210,6 +211,36 @@ void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[],
 			}
 			result[pos] = min_last;
 			cost[pos] = cost_result;
+		}
+	}
+}
+
+//视差计算
+void __stdcall get_result(INT16 result[], INT32 sad_diff[], INT32 strides[], INT32 shapes[] ) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+	//disparity length
+	int d_length = shapes[2];
+	//row and column size
+	int S0 = strides[0] / sizeof(INT32);
+	int S1 = strides[1] / sizeof(INT32);
+	int S2 = strides[2] / sizeof(INT32);
+	//printf("%d,%d,%d\r\n", row_length, column_length, d_length);
+	//printf("%d,%d,%d\r\n", S0, S1, S2);
+	for (int row = 0; row < row_length; row++) {
+		for (int column = 0; column < column_length; column++) {
+			int pos = row*S0 + column*S1;
+			int min_disparity = 0;
+			for (int d = 1; d < d_length; d++) {
+				int sad_diff_pos = pos + d*S2;
+				if (sad_diff[sad_diff_pos] < sad_diff[pos + min_disparity*S2]) {
+					min_disparity = d;
+				}
+			}
+			int result_pos = row*column_length + column;
+			result[result_pos] = min_disparity;
 		}
 	}
 }

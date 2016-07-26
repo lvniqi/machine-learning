@@ -11,9 +11,13 @@ import numpy as np
 
 
 class StereoVisionBM_DP(StereoVisionBM2):
-    def get_result_forward(self):
+    def get_result_forward(self, is_left=True):
         self.dp_forward_cpp_func = get_dp_forward_cpp_func(self.dll)
-
+        temp_result = None
+        if is_left:
+            temp_result = self.my_result
+        else:
+            temp_result = self.my_result.copy()
         # 代价矩阵
         cost = np.zeros((self.column_length, self.d_max), dtype=np.float32)
         # 结果矩阵
@@ -26,16 +30,16 @@ class StereoVisionBM_DP(StereoVisionBM2):
 
             for column in range(self.column_length):
                 dp_forward_cpp(self.dp_forward_cpp_func, result_array, cost, sad_row, self.column_length, self.d_max, 5)
-                #cost_func(sad_row, column)
+                # cost_func(sad_row, column)
 
             # 统计结果 最后一个最小的视差
             min_d_last = np.argmin(cost[-1])
-            self.my_result[row][-1] = min_d_last
+            temp_result[row][-1] = min_d_last
             min_d = min_d_last
             for column in range(self.column_length - 1, 0, -1):
-                self.my_result[row][column - 1] = result_array[column][min_d]
+                temp_result[row][column - 1] = result_array[column][min_d]
                 min_d = result_array[column][min_d]
-        return self.my_result.copy()
+        return temp_result.copy()
 
     def get_result_reverse(self):
         for row in np.arange(self.row_length - 1, -1, -1):
@@ -135,7 +139,7 @@ if __name__ == '__main__':
     import time
 
     window_size = 5
-    d_max = 15
+    d_max = 20
     tt = time.time()
     stereo = StereoVisionBM_DP(left, right, window_size, d_max)
     stereo.compute_cost()
