@@ -138,7 +138,6 @@ class StereoVisionBM2:
             temp_result = self.my_result.copy()
             used_sad_result = self.sad_right_result
 
-
         get_result_cpp(result_cpp_func, temp_result, used_sad_result)
         '''for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
@@ -177,17 +176,29 @@ class StereoVisionBM2:
         return result
 
     def post_processing(self):
+        """
+        后处理 处理视差检后的结果
+        :return:
+        """
         for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
                 if self.left_right_result[row][column]:
-                    left_pos = column - 2 if column - 2 >= 0 else 0
-                    right_pos = column + 3 if column + 3 <= self.column_length else self.column_length
-                    top_pos = row - 2 if row-2 >= 0 else 0
-                    bottom_pos = row + 3 if row + 3 <= self.row_length else self.row_length
+                    left_pos = column - self.window_size / 2 \
+                        if column - self.window_size / 2 >= 0 \
+                        else 0
+                    right_pos = column + self.window_size / 2 + 1 \
+                        if column + self.window_size / 2 + 1 <= self.column_length \
+                        else self.column_length
+                    top_pos = row - self.window_size / 2 \
+                        if row - self.window_size / 2 >= 0 \
+                        else 0
+                    bottom_pos = row + self.window_size / 2 + 1 \
+                        if row + self.window_size / 2 + 1 <= self.row_length \
+                        else self.row_length
                     vote = np.zeros(self.d_max, np.int16)
                     for i in np.arange(top_pos, bottom_pos):
                         for j in np.arange(left_pos, right_pos):
-                            if self.left_right_result[i][j] == 0:
+                            if self.left_right_result[i][j] <= 1:
                                 vote[self.my_result[i][j]] += 1
                     self.my_result[row][column] = np.argmax(vote)
         return self.my_result.copy()
