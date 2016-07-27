@@ -76,7 +76,7 @@ void __stdcall compute_cost_bt_d(INT16 result[], INT16 left[], INT16 right[], IN
 }
 
 //代价聚合
-void __stdcall aggregate_cost(INT32 result[], INT16 diff[],INT32 diff_strides[], INT32 result_strides[], INT16 shapes[], INT16 window_size) {
+void __stdcall aggregate_cost(INT32 result[], INT16 diff[], const INT32 diff_strides[], const INT32 result_strides[], const INT16 shapes[],const INT16 window_size) {
 	//deep length
 	int d_max = shapes[0];
 	//row length
@@ -136,7 +136,7 @@ void __stdcall aggregate_cost(INT32 result[], INT16 diff[],INT32 diff_strides[],
 	}
 }
 //动态规划
-void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p) {
+void __stdcall DP_search_forward(INT16 result[], float cost[], const INT16 sad_row[], const INT32 column_length, const  INT32 d_max, const float p) {
 	//第一个数据 没有约束项
 	for (int d = 0; d < d_max; d++) {
 		//代价等于 数据项
@@ -177,7 +177,7 @@ void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], 
 	}
 }
 //动态规划 简化版
-void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p) {
+void __stdcall DP_search_forward2(INT16 result[], float cost[], const  INT16 sad_row[], const INT32 column_length, const INT32 d_max,const float p) {
 	
 	//第一个数据 没有约束项
 	for (int d = 0; d < d_max; d++) {
@@ -216,7 +216,7 @@ void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[],
 }
 
 //视差计算
-void __stdcall get_result(INT16 result[], INT32 sad_diff[], INT32 strides[], INT32 shapes[] ) {
+void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 strides[], const INT32 shapes[] ) {
 	//row length
 	int row_length = shapes[0];
 	//column length
@@ -244,3 +244,4 @@ void __stdcall get_result(INT16 result[], INT32 sad_diff[], INT32 strides[], INT
 		}
 	}
 }
+

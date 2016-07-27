@@ -1,8 +1,22 @@
 #pragma once
 
+//计算单点代价
 extern "C" _declspec(dllexport) void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]);
+//计算单点代价 BT版本
 extern "C" _declspec(dllexport) void __stdcall compute_cost_bt_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]);
-extern "C" _declspec(dllexport) void __stdcall aggregate_cost(INT32 result[], INT16 diff[], INT32 diff_strides[], INT32 result_strides[], INT16 shapes[], INT16 window_size);
-extern "C" _declspec(dllexport) void __stdcall DP_search_forward(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p);
-extern "C" _declspec(dllexport) void __stdcall DP_search_forward2(INT16 result[], float cost[], INT16 sad_row[], INT32 column_length, INT32 d_max, float p);
-extern "C" _declspec(dllexport) void __stdcall get_result(INT16 result[], INT32 sad_diff[], INT32 strides[], INT32 shapes[]);
+//代价聚合
+extern "C" _declspec(dllexport) void __stdcall aggregate_cost(INT32 result[], INT16 diff[], const INT32 diff_strides[], const INT32 result_strides[], const INT16 shapes[], const INT16 window_size);
+//动态规划
+extern "C" _declspec(dllexport) void __stdcall DP_search_forward(INT16 result[], float cost[], const INT16 sad_row[], const INT32 column_length, const  INT32 d_max, const float p);
+//动态规划 简化版
+extern "C" _declspec(dllexport) void __stdcall DP_search_forward2(INT16 result[], float cost[], const  INT16 sad_row[], const INT32 column_length, const INT32 d_max, const float p);
+//视差计算
+extern "C" _declspec(dllexport) void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 strides[], const INT32 shapes[]);
+
+/*-------------census-------------*/
+//计算census
+extern "C" _declspec(dllexport) void __stdcall get_census(BOOLEAN result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size);
+//计算两个bool数组hamming距离
+extern "C" _declspec(dllexport) INT16 __stdcall get_hamming_distance(const BOOLEAN census1[], const BOOLEAN census2[], const int len);
+//计算单点代价 census版本
+extern "C" _declspec(dllexport) void __stdcall compute_cost_census_d(INT16 result[], BOOLEAN left[], BOOLEAN right[], const INT16 strides[], const INT16 shapes[]);

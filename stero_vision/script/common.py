@@ -61,6 +61,25 @@ def get_compute_cost_bt_d_cpp_func(dll):
     return compute_cost_bt_d
 
 
+def get_compute_cost_census_d_cpp_func(dll):
+    """
+    代价计算census版本
+    :param dll: dll文件
+    :return: 代价计算函数census版本
+    """
+    compute_cost_census_d = dll.compute_cost_census_d
+
+    compute_cost_census_d.restype = ctypes.c_void_p
+    compute_cost_census_d.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.bool, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.bool, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+    ]
+    return compute_cost_census_d
+
+
 def compute_cost_d_cpp(func, left, right):
     """
     代价计算python包装
@@ -71,8 +90,43 @@ def compute_cost_d_cpp(func, left, right):
     """
     strides = np.array(left.strides, dtype=np.int16)
     shapes = np.array(left.shape, dtype=np.int16)
-    result = np.zeros(left.shape, dtype=np.int16)
+    result = np.zeros(left.shape[:2], dtype=np.int16)
     func(result, left, right, strides, shapes)
+    return result
+
+
+def get_census_cpp_func(dll):
+    """
+        census序列计算
+        :param dll: dll文件
+        :return: census序列计算
+    """
+    get_census = dll.get_census
+
+    get_census.restype = ctypes.c_void_p
+    get_census.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.bool, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        ctypes.c_int32
+    ]
+    return get_census
+
+
+def get_census_cpp(func, image, window_size):
+    """
+    census计算python包装
+    :param func: census计算函数
+    :param image:待计算图像
+    :param window_size:窗口大小
+    :return:结果
+    """
+    strides = np.array(image.strides, dtype=np.int32)
+    shapes = np.array(image.shape, dtype=np.int32)
+    (row_length, column_length) = image.shape
+    result = np.zeros((row_length, column_length, window_size * window_size), dtype=np.bool)
+    func(result, image, strides, shapes, window_size)
     return result
 
 

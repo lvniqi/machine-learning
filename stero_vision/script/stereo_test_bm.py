@@ -87,7 +87,7 @@ class StereoVisionBM2:
     def compute_cost(self):
         for d in range(self.d_max):
             self.left_diff[d] = self.gaussian_filter(self.compute_cost_d(d))
-        return self.left_diff
+        return self.left_diff.copy()
 
     # Cost aggregation
     def aggregate_cost(self, is_python=False):
