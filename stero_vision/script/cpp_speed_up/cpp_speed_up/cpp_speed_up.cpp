@@ -240,8 +240,34 @@ void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 st
 				}
 			}
 			int result_pos = row*column_length + column;
+			//亚像素求精
+			min_disparity = subpixel_calculator(min_disparity,
+				sad_diff[pos + min_disparity*S2],
+				sad_diff[pos + (min_disparity - 1)*S2],
+				sad_diff[pos + (min_disparity + 1)*S2]);
 			result[result_pos] = min_disparity;
 		}
 	}
 }
 
+//亚像素求精
+int __stdcall subpixel_calculator(int d,int f_d,int f_d_l,int f_d_r) {
+	d *= 16;
+	//2a = 2(f(d+)+d(d-)-2f(d))
+	int a = (f_d_r + f_d_l - f_d);
+	if (a != 0) {
+		//b = f(d+)-f(d-)
+		int b = (f_d_r - f_d_l);
+		//d = -b/2a
+		d = d - (16 * b) / (2 * a);
+		if (d < 0) {
+			return 0;
+		}
+		else {
+			return d;
+		}
+	}
+	else {
+		return d;
+	}
+}

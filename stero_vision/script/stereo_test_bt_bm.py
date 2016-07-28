@@ -32,15 +32,15 @@ if __name__ == '__main__':
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
-    my_result = my_result * 255 / d_max
+    my_result = my_result * (255.0 / d_max / 16)
     data_set['my_result_bt_bm'] = my_result
 
     diff_result = stereo.left_right_check()
-    #diff_result = diff_result * 255 / d_max
+    diff_result = diff_result * (255.0 / d_max / 16)
     data_set['diff_result'] = diff_result
 
     post_result = stereo.post_processing()
-    post_result = post_result * 255 / d_max
+    post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
     print time.time() - tt

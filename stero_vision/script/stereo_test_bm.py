@@ -162,14 +162,15 @@ class StereoVisionBM2:
             for column in np.arange(self.column_length):
                 # 左侧视差
                 disparity_left = left_row[column]
-                pos_right = column - disparity_left
+                pos_right = column - disparity_left / 16
                 if pos_right < 0:
                     continue
                 # 右侧视差
                 disparity_right = right_row[pos_right]
                 # 得到遮挡/不稳定点
-                if disparity_left != disparity_right:
-                    result_row[column] = abs(disparity_right - disparity_left)
+                diff = abs(disparity_left - disparity_right)
+                if diff > 8:
+                    result_row[column] = diff
         result = self.left_right_result.copy()
         result *= 255 / self.d_max
 
@@ -195,10 +196,10 @@ class StereoVisionBM2:
                     bottom_pos = row + self.window_size / 2 + 1 \
                         if row + self.window_size / 2 + 1 <= self.row_length \
                         else self.row_length
-                    vote = np.zeros(self.d_max, np.int16)
+                    vote = np.zeros(self.d_max * 16, np.int16)
                     for i in np.arange(top_pos, bottom_pos):
                         for j in np.arange(left_pos, right_pos):
-                            if self.left_right_result[i][j] <= 1:
+                            if self.left_right_result[i][j] <= 8:
                                 vote[self.my_result[i][j]] += 1
                     self.my_result[row][column] = np.argmax(vote)
         return self.my_result.copy()
@@ -275,15 +276,15 @@ if __name__ == '__main__':
     stereo.compute_cost()
     t_diff = stereo.aggregate_cost()
     my_result = stereo.get_result()
-    my_result = my_result * 255 / d_max
+    my_result = my_result * (255.0 / d_max / 16)
     data_set['my_result_7'] = my_result
 
     diff_result = stereo.left_right_check()
-    diff_result = diff_result * 255 / d_max
+    diff_result = diff_result * (255.0 / d_max / 16)
     data_set['diff_result'] = diff_result
 
     post_result = stereo.post_processing()
-    post_result = post_result * 255 / d_max
+    post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
     show_image(data_set)

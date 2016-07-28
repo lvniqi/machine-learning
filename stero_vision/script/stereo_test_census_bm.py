@@ -21,16 +21,16 @@ class StereoVisionCensus_BT(StereoVisionBM2):
     def compute_cost(self):
         self.get_census_cpp_func = get_census_cpp_func(self.dll)
 
-        #print 'calcute left census'
+        # print 'calcute left census'
         self.left_census = get_census_cpp(self.get_census_cpp_func, self.left, self.census_size)
         # self.left_census = self.get_census(self.left, self.census_size)
-        #print 'calcute right census'
+        # print 'calcute right census'
         right_census = get_census_cpp(self.get_census_cpp_func, self.right, self.census_size)
         # right_census = self.get_census(self.right, self.census_size)
         self.right_census_extend = self.make_border_rgb(right_census, self.window_size, self.d_max)
 
         for d in range(self.d_max):
-            #print 'compute_cost_d:', d
+            # print 'compute_cost_d:', d
             self.left_diff[d] = self.gaussian_filter(self.compute_cost_d(d))
 
         return self.left_diff.copy()
@@ -110,18 +110,20 @@ if __name__ == '__main__':
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
-    my_result = my_result * 255 / d_max
-    data_set['my_result_ensus_bm'] = my_result
 
     diff_result = stereo.left_right_check()
-    # diff_result = diff_result * 255 / d_max
-    data_set['diff_result'] = diff_result
 
     post_result = stereo.post_processing()
-    post_result = post_result * 255 / d_max
-    data_set['post_result'] = post_result
 
-    print time.time() - tt
+    print "use time:", time.time() - tt
+    my_result = my_result * (255.0 / d_max / 16)
+    data_set['my_result_ensus_bm'] = my_result
+
+    diff_result = diff_result * (255.0 / d_max / 16)
+    data_set['diff_result'] = diff_result
+
+    post_result = post_result * (255.0 / d_max / 16)
+    data_set['post_result'] = post_result
 
     show_image(data_set)
     save_image(my_result, 'window method Census BM')

@@ -263,11 +263,11 @@ def get_data_set(pos=0, is_color=False):
     if is_color:
         img_l = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png'), dtype=np.int16)
         img_r = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im6.png'), dtype=np.int16)
-        img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp6.png'), dtype=np.int16)
+        img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp2.png'), dtype=np.int16)
     else:
         img_l = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png').convert('L'), dtype=np.int16)
         img_r = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im6.png').convert('L'), dtype=np.int16)
-        img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp6.png').convert('L'), dtype=np.int16)
+        img_result = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'disp2.png').convert('L'), dtype=np.int16)
     data_set['left'] = img_l
     data_set['right'] = img_r
     data_set['result'] = img_result

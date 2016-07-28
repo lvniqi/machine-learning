@@ -12,7 +12,8 @@ extern "C" _declspec(dllexport) void __stdcall DP_search_forward(INT16 result[],
 extern "C" _declspec(dllexport) void __stdcall DP_search_forward2(INT16 result[], float cost[], const  INT16 sad_row[], const INT32 column_length, const INT32 d_max, const float p);
 //视差计算
 extern "C" _declspec(dllexport) void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 strides[], const INT32 shapes[]);
-
+//亚像素求精
+extern "C" _declspec(dllexport) int __stdcall subpixel_calculator(int d, int f_d, int f_d_l, int f_d_r);
 /*-------------census-------------*/
 //计算census
 extern "C" _declspec(dllexport) void __stdcall get_census(BOOLEAN result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size);
