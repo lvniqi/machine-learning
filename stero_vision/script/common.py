@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ctypes
 
-sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus']
+sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus','mydata_1']
 
 
 def get_dll_folder():
@@ -259,6 +259,7 @@ def get_data_folder(sub_folder='barn2'):
 
 
 def get_data_set(pos=0, is_color=False):
+    #print pos,sub_folders[pos]
     data_set = {}
     if is_color:
         img_l = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png'), dtype=np.int16)
