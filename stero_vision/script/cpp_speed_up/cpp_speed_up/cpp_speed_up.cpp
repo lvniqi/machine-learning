@@ -7,6 +7,37 @@
 #include <math.h>
 #include <float.h>
 
+//构建积分图
+void __stdcall integral(INT32 integral_result[], INT32 image[], INT32 shapes[]) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+
+	//列积分
+	INT32 *rowSum = new INT32[column_length]; // sum of each column
+
+	// 计算第一行积分
+	for (int column = 0; column<column_length; column++) {
+		integral_result[column] = image[column];
+		if (column>0) {
+			integral_result[column] += integral_result[column - 1];
+		}
+	}
+	for (int row = 1; row<row_length; row++) {
+		int offset = row*column_length;
+		// 每列首行 = 上一行 + 此数据
+		rowSum[0] += image[offset];
+		integral_result[offset] = rowSum[0];
+		for (int column = 1; column < column_length; column++) {
+			int pos = offset + column;
+			// 其余行 
+			rowSum[column] += image[pos];
+			integral_result[pos] = rowSum[column] + integral_result[pos - 1];
+		}
+	}
+	delete(rowSum);
+}
 //计算单点代价
 void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]) {
 	//row length

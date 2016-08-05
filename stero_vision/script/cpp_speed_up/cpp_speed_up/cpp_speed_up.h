@@ -1,5 +1,7 @@
 #pragma once
 
+//构建积分图
+extern "C" _declspec(dllexport) void __stdcall integral(INT32 integral_result[], INT32 image[], INT32 shapes[]);
 //计算单点代价
 extern "C" _declspec(dllexport) void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]);
 //计算单点代价 BT版本
