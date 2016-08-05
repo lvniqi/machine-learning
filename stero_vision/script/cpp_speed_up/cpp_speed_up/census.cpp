@@ -29,7 +29,7 @@ void __stdcall get_census(BOOLEAN result[], const INT16 image[], const INT32 str
 			int start_column = 0;
 			//结束列
 			int stop_column = window_size;
-			/*//上侧边界检查
+			//上侧边界检查
 			if (row < window_size / 2){
 				start_row = window_size / 2 - row;
 			}
@@ -44,7 +44,7 @@ void __stdcall get_census(BOOLEAN result[], const INT16 image[], const INT32 str
 			//右侧边界检查
 			else if (column >= column_length - window_size / 2) {
 				stop_column = (window_size / 2 + 1) + column_length - column;
-			}*/
+			}
 
 			for (int i = start_row; i < stop_row; i++) {
 				for (int j = start_column; j < stop_column; j++) {
