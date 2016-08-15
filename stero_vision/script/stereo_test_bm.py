@@ -6,7 +6,8 @@ Created on Sun Jul 10 17:51:18 2016
 """
 
 from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, compute_cost_d_cpp, \
-    aggregate_cost_cpp, get_compute_cost_d_cpp_func, get_result_cpp_func, get_result_cpp
+    aggregate_cost_cpp, get_compute_cost_d_cpp_func, get_result_cpp_func, get_result_cpp, get_left_right_check_cpp_func, \
+    left_right_check_cpp
 import numpy as np
 from scipy.ndimage import filters
 
@@ -155,6 +156,9 @@ class StereoVisionBM2:
         left = self.get_result(is_left=True)
         print "right:"
         right = self.get_result(is_left=False)
+        left_right_check_cpp_func = get_left_right_check_cpp_func(self.dll)
+        left_right_check_cpp(left_right_check_cpp_func, self.left_right_result, left, right)
+        '''
         for row in np.arange(self.row_length):
             left_row = left[row]
             right_row = right[row]
@@ -171,6 +175,7 @@ class StereoVisionBM2:
                 diff = abs(disparity_left - disparity_right)
                 if diff > 8:
                     result_row[column] = diff
+        '''
         result = self.left_right_result.copy()
         result *= 255 / self.d_max
 

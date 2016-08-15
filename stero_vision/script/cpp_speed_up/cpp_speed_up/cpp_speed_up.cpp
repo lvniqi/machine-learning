@@ -246,6 +246,40 @@ void __stdcall DP_search_forward2(INT16 result[], float cost[], const  INT16 sad
 	}
 }
 
+//左右视差检查
+void __stdcall left_right_check(INT16 result[], INT16 left[], INT16 right[], const INT32 strides[], const INT32 shapes[]) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+	//row and column size
+	int S0 = strides[0] / sizeof(INT16);
+	int S1 = strides[1] / sizeof(INT16);
+	//printf("shapes %d, %d\r\n", row_length, column_length);
+	//printf("strides %d, %d\r\n", S0, S1);
+	for (int row = 0; row < row_length; row++) {
+		for (int column = 0; column < column_length; column++) {
+			int pos_l = row*S0 + column*S1;
+			//左侧值
+			int disparity_left = left[pos_l];
+			//右侧位置
+			int column_r = column - (disparity_left / SUB_PIXEL_LEVEL);
+			if (column_r < 0) {
+				//result[pos_l] = 16;
+				continue;
+			}
+			//右侧视差
+			int pos_r = row*S0 + column_r*S1;
+			int disparity_right = right[pos_r];
+			//得到遮挡 / 不稳定点
+			int diff = abs(disparity_left - disparity_right);
+			if (diff > SUB_PIXEL_LEVEL / 2) {
+				result[pos_l] = diff;
+			}
+		}
+	}
+}
+
 //视差计算
 void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 strides[], const INT32 shapes[] ) {
 	//row length
@@ -283,14 +317,14 @@ void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 st
 
 //亚像素求精
 int __stdcall subpixel_calculator(int d,int f_d,int f_d_l,int f_d_r) {
-	d *= 16;
+	d *= SUB_PIXEL_LEVEL;
 	//2a = 2(f(d+)+d(d-)-2f(d))
 	int a = (f_d_r + f_d_l - f_d);
 	if (a != 0) {
 		//b = f(d+)-f(d-)
 		int b = (f_d_r - f_d_l);
 		//d = -b/2a
-		d = d - (16 * b) / (2 * a);
+		d = d - (SUB_PIXEL_LEVEL * b) / (2 * a);
 		if (d < 0) {
 			return 0;
 		}

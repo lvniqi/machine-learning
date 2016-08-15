@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ctypes
 
-sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus','mydata_1']
+sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus', 'mydata_1']
 
 
 def get_dll_folder():
@@ -240,7 +240,7 @@ def get_result_cpp_func(dll):
 
 def get_result_cpp(func, result, sad_diff):
     """
-    视察计算python包装
+    视差计算python包装
     :param func: 视差计算函数
     :param result: 视差结果
     :param sad_diff: 聚合后视差值
@@ -248,6 +248,38 @@ def get_result_cpp(func, result, sad_diff):
     strides = np.array(sad_diff.strides, dtype=np.int32)
     shapes = np.array(sad_diff.shape, dtype=np.int32)
     func(result, sad_diff, strides, shapes)
+
+
+def get_left_right_check_cpp_func(dll):
+    """
+    左右视差检查函数
+    :param dll:dll文件
+    :return:左右视差检查函数
+    """
+    left_right_check = dll.left_right_check
+
+    left_right_check.restype = ctypes.c_void_p
+    left_right_check.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+    ]
+    return left_right_check
+
+
+def left_right_check_cpp(func, result, left, right):
+    """
+    左右视差检查python包装
+    :param func: 左右视差检查函数
+    :param result: 视差结果
+    :param left: 左视差
+    :param right: 右视差
+    """
+    strides = np.array(left.strides, dtype=np.int32)
+    shapes = np.array(left.shape, dtype=np.int32)
+    func(result, left, right, strides, shapes)
 
 
 def get_data_folder(sub_folder='barn2'):
@@ -259,7 +291,7 @@ def get_data_folder(sub_folder='barn2'):
 
 
 def get_data_set(pos=0, is_color=False):
-    #print pos,sub_folders[pos]
+    # print pos,sub_folders[pos]
     data_set = {}
     if is_color:
         img_l = np.array(Image.open(get_data_folder(sub_folders[pos]) + 'im2.png'), dtype=np.int16)
