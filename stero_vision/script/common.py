@@ -282,6 +282,39 @@ def left_right_check_cpp(func, result, left, right):
     func(result, left, right, strides, shapes)
 
 
+def low_texture_detection_cpp_func(dll):
+    """
+    低纹理区域检查函数
+    :param dll:dll文件
+    :return:低纹理区域检查函数
+    """
+    low_texture_detection = dll.low_texture_detection
+
+    low_texture_detection.restype = ctypes.c_void_p
+    low_texture_detection.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    return low_texture_detection
+
+
+def low_texture_detection_cpp(func, result, image, window_size, texture_range):
+    """
+    低纹理区域检查python包装
+    :param func: 低纹理区域检查函数
+    :param result: 纹理结果
+    :param image: 图像
+    :param texture_range:纹理阈值
+    """
+    strides = np.array(image.strides, dtype=np.int32)
+    shapes = np.array(image.shape, dtype=np.int32)
+    func(result, image, strides, shapes, window_size, texture_range)
+
+
 def get_data_folder(sub_folder='barn2'):
     this_dir = os.getcwd().replace('\\', '/')
     folder = this_dir.split('/')

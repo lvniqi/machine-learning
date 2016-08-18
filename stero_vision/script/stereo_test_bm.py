@@ -7,7 +7,7 @@ Created on Sun Jul 10 17:51:18 2016
 
 from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, compute_cost_d_cpp, \
     aggregate_cost_cpp, get_compute_cost_d_cpp_func, get_result_cpp_func, get_result_cpp, get_left_right_check_cpp_func, \
-    left_right_check_cpp
+    left_right_check_cpp, low_texture_detection_cpp_func, low_texture_detection_cpp
 import numpy as np
 from scipy.ndimage import filters
 
@@ -209,6 +209,17 @@ class StereoVisionBM2:
                     self.my_result[row][column] = np.argmax(vote)
         return self.my_result.copy()
 
+    def low_texture_detection(self):
+        """
+        低纹理区域检测
+        :return: 检测结果
+        """
+        func = low_texture_detection_cpp_func(self.dll)
+        result = np.zeros(left.shape, np.int16)
+        low_texture_detection_cpp(func, result, self.left, self.window_size, 5)
+        result = filters.median_filter(result, 3)
+        return result
+
     @staticmethod
     def gaussian_filter(image_in, sigma=1.5):
         return filters.gaussian_filter(image_in, sigma)
@@ -284,6 +295,9 @@ if __name__ == '__main__':
     my_result = my_result * (255.0 / d_max / 16)
     data_set['my_result_7'] = my_result
 
+    low_texture = stereo.low_texture_detection()
+    data_set['low_texture'] = low_texture
+
     diff_result = stereo.left_right_check()
     diff_result = diff_result * (255.0 / d_max / 16)
     data_set['diff_result'] = diff_result
@@ -296,4 +310,5 @@ if __name__ == '__main__':
     print time.time() - tt
     save_image(diff_result, 'diff_result')
     save_image(post_result, 'post_result')
+    save_image(low_texture, 'low_texture')
     save_image(my_result, 'window method 7')

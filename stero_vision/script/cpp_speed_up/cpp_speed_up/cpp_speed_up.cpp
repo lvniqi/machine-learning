@@ -4,16 +4,12 @@
 #include "stdafx.h"
 #include "cpp_speed_up.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <float.h>
 
 //构建积分图
-void __stdcall integral(INT32 integral_result[], INT32 image[], INT32 shapes[]) {
-	//row length
-	int row_length = shapes[0];
-	//column length
-	int column_length = shapes[1];
-
+void __stdcall integral(INT32 integral_result[], INT16 image[], int row_length,int column_length) {
 	//列积分
 	INT32 *rowSum = new INT32[column_length]; // sum of each column
 
@@ -334,5 +330,49 @@ int __stdcall subpixel_calculator(int d,int f_d,int f_d_l,int f_d_r) {
 	}
 	else {
 		return d;
+	}
+}
+void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+	//差分结果
+	INT16 * temp = (INT16*)malloc(sizeof(INT16)*row_length*column_length);
+	//row and column size
+	const int S0 = strides[0] / sizeof(INT16);
+	const int S1 = strides[1] / sizeof(INT16);
+	//printf("shapes %d, %d\r\n", row_length, column_length);
+	//printf("strides %d, %d\r\n", S0, S1);
+	//得到差分结果 以 行 为一维空间搜索
+	for (int row = 0; row < row_length; row++) {
+		for (int column = 0; column < column_length - 1; column++) {
+			int pos_temp = row*column_length + column;
+			int pos = row*S0 + column*S1;
+			int pos_next = pos + 2*S1;
+			if (image[pos] > image[pos_next]) {
+				temp[pos_temp] = image[pos] - image[pos_next];
+			}
+			else {
+				temp[pos_temp] = image[pos_next] - image[pos];
+			}
+		}
+	}
+	for (int row = 0; row < row_length; row++) {
+		for (int column = 0; column < column_length - window_size; column++) {
+			int pos_temp = row*column_length + column;
+			int pos = row*S0 + (column + window_size / 2)*S1;
+			int sum = 0;
+			for (int i = 0; i < window_size; i++) {
+				sum += temp[pos_temp];
+				pos_temp++;
+			}
+			if (sum < texture_range) {
+				result[pos] = 255;
+			}
+			else {
+				result[pos] = 0;
+			}
+		}
 	}
 }

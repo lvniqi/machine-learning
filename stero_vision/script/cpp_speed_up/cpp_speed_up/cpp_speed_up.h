@@ -2,7 +2,7 @@
 //次像素 16
 #define SUB_PIXEL_LEVEL 16
 //构建积分图
-extern "C" _declspec(dllexport) void __stdcall integral(INT32 integral_result[], INT32 image[], INT32 shapes[]);
+extern "C" _declspec(dllexport) void __stdcall integral(INT32 integral_result[], INT16 image[], int row_length, int column_length);
 //计算单点代价
 extern "C" _declspec(dllexport) void __stdcall compute_cost_d(INT16 result[], INT16 left[], INT16 right[], INT16 strides[], INT16 shapes[]);
 //计算单点代价 BT版本
@@ -26,3 +26,6 @@ extern "C" _declspec(dllexport) void __stdcall get_census(BOOLEAN result[], cons
 extern "C" _declspec(dllexport) INT16 __stdcall get_hamming_distance(const BOOLEAN census1[], const BOOLEAN census2[], const int len);
 //计算单点代价 census版本
 extern "C" _declspec(dllexport) void __stdcall compute_cost_census_d(INT16 result[], BOOLEAN left[], BOOLEAN right[], const INT16 strides[], const INT16 shapes[]);
+
+/*-------------低纹理区域检测-------------*/
+extern "C" _declspec(dllexport) void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range);
