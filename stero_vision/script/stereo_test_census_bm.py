@@ -116,7 +116,11 @@ if __name__ == '__main__':
     post_result = stereo.post_processing()
 
     print "use time:", time.time() - tt
+    low_texture = stereo.low_texture_detection()
+    data_set['low_texture'] = low_texture
+
     my_result = my_result * (255.0 / d_max / 16)
+
     data_set['my_result_ensus_bm'] = my_result
 
     diff_result = diff_result * (255.0 / d_max / 16)

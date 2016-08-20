@@ -230,8 +230,8 @@ class StereoVisionBM2:
         :return: 检测结果
         """
         func = low_texture_detection_cpp_func(self.dll)
-        result = np.zeros(left.shape, np.int16)
-        low_texture_detection_cpp(func, result, self.left, self.window_size, self.window_size * texture_range)
+        result = np.zeros(self.left.shape, np.int16)
+        low_texture_detection_cpp(func, result, self.left, self.window_size, int(self.window_size * texture_range))
         result = filters.median_filter(result, 3)
         return result
 
@@ -318,6 +318,12 @@ if __name__ == '__main__':
     data_set['diff_result'] = diff_result
 
     post_result = stereo.post_processing()
+
+    for row in range(low_texture.shape[0]):
+        for column in range(low_texture.shape[1]):
+            if low_texture[row][column]:
+                post_result[row][column] = 0
+
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
