@@ -42,6 +42,8 @@ class StereoVisionBM2:
         self.compute_cost_d_cpp_func = get_compute_cost_d_cpp_func(self.dll)
         self.aggregate_cost_cpp_func = get_aggregate_cost_cpp_func(self.dll)
 
+        self.low_texture = None
+
     @staticmethod
     def make_border(image, window_size, d_max):
         new_image = image
@@ -224,6 +226,46 @@ class StereoVisionBM2:
 
         return self.my_result.copy()
 
+    def fix_low_texture(self):
+        for row in range(self.low_texture.shape[0]):
+            for column in range(self.low_texture.shape[1]):
+                if self.low_texture[row][column]:
+                    (left, right, top, bottom) = (0, 0, 0, 0)
+                    # find left
+                    for left in range(column, -1, -1):
+                        if not self.low_texture[row][left]:
+                            break
+                    # find right
+                    for right in range(column, self.low_texture.shape[1]):
+                        if not self.low_texture[row][right]:
+                            break
+                    # find top
+                    for top in range(row, -1, -1):
+                        if not self.low_texture[top][column]:
+                            break
+                    # find bottom
+                    for bottom in range(row, self.low_texture.shape[0]):
+                        if not self.low_texture[bottom][column]:
+                            break
+                    value_left = self.my_result[row][left]
+                    value_right = self.my_result[row][right]
+                    step = (value_right - value_left) * 1.0 / (right - left)
+                    value = value_left + step * (column - left)
+
+                    value_top = self.my_result[top][column]
+                    value_bottom = self.my_result[bottom][column]
+                    step_2 = (value_bottom - value_top) * 1.0 / (bottom - top)
+                    value_2 = value_top + step * (bottom - top)
+                    if value == value_2:
+                        self.my_result[row][column] = value
+                    elif np.abs(value - value_2) < 4 * 16:
+                        self.my_result[row][column] = (value + value_2) / 2
+                    else:
+                        pass
+                        #self.my_result[row][column] = 0
+                        #self.my_result[row][column] = (value + value_2) / 2
+        return self.my_result
+
     def low_texture_detection(self, texture_range=1):
         """
         低纹理区域检测
@@ -232,8 +274,8 @@ class StereoVisionBM2:
         func = low_texture_detection_cpp_func(self.dll)
         result = np.zeros(self.left.shape, np.int16)
         low_texture_detection_cpp(func, result, self.left, self.window_size, int(self.window_size * texture_range))
-        result = filters.median_filter(result, 3)
-        return result
+        self.low_texture = filters.median_filter(result, 3)
+        return self.low_texture.copy()
 
     @staticmethod
     def gaussian_filter(image_in, sigma=1.5):
@@ -301,7 +343,7 @@ if __name__ == '__main__':
     import time
 
     window_size = 11
-    d_max = 15
+    d_max = 32
     tt = time.time()
     stereo = StereoVisionBM2(left, right, window_size, d_max)
     stereo.compute_cost()
@@ -318,47 +360,17 @@ if __name__ == '__main__':
     data_set['diff_result'] = diff_result
 
     post_result = stereo.post_processing()
-
-    for row in range(low_texture.shape[0]):
-        for column in range(low_texture.shape[1]):
-            if low_texture[row][column]:
-                (left, right, top, bottom) = (0, 0, 0, 0)
-                # find left
-                for left in range(column, -1, -1):
-                    if not low_texture[row][left]:
-                        break
-                # find right
-                for right in range(column, low_texture.shape[1]):
-                    if not low_texture[row][right]:
-                        break
-                # find top
-                for top in range(row, -1, -1):
-                    if not low_texture[top][column]:
-                        break
-                # find bottom
-                for bottom in range(row, low_texture.shape[0]):
-                    if not low_texture[bottom][column]:
-                        break
-                value_left = post_result[row][left]
-                value_right = post_result[row][right]
-                step = (value_right - value_left) * 1.0 / (right - left)
-                value = value_left + step * (column - left)
-
-                value_top = post_result[top][column]
-                value_bottom = post_result[bottom][column]
-                step_2 = (value_bottom - value_top) * 1.0 / (bottom - top)
-                value_2 = value_top + step * (bottom - top)
-                if value == value_2:
-                    post_result[row][column] = value
-                else:
-                    post_result[row][column] = (value+value_2)/2
-
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
+
+    post_result2 = stereo.fix_low_texture()
+    post_result2 = post_result2 * (255.0 / d_max / 16)
+    data_set['post_result2'] = post_result2
 
     show_image(data_set)
     print time.time() - tt
     save_image(diff_result, 'diff_result')
     save_image(post_result, 'post_result')
+    save_image(post_result2, 'post2_result')
     save_image(low_texture, 'low_texture')
     save_image(my_result, 'window method 7')
