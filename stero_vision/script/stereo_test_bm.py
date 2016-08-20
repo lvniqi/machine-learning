@@ -218,9 +218,9 @@ class StereoVisionBM2:
             ctypes.c_int32,
             ctypes.c_int32,
         ]
-        strides = np.array(left.strides, dtype=np.int32)
-        shapes = np.array(left.shape, dtype=np.int32)
-        post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, window_size, d_max)
+        strides = np.array(self.left.strides, dtype=np.int32)
+        shapes = np.array(self.left.shape, dtype=np.int32)
+        post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, self.window_size, self.d_max)
 
         return self.my_result.copy()
 
