@@ -15,6 +15,7 @@ void __stdcall integral(INT32 integral_result[], INT16 image[], int row_length,i
 
 	// 计算第一行积分
 	for (int column = 0; column<column_length; column++) {
+		rowSum[column] = image[column];
 		integral_result[column] = image[column];
 		if (column>0) {
 			integral_result[column] += integral_result[column - 1];
@@ -128,6 +129,9 @@ void __stdcall aggregate_cost(INT32 result[], INT16 diff[], const INT32 diff_str
 	for (int d = 0; d < d_max; d++) {
 		//printf("d:%d\r\n", d);
 		INT16* diff_this_deep = &(diff[S_deep*d]);
+		//得到积分图
+		INT32* integral_result = new INT32[row_length*column_length];
+		integral(integral_result, diff_this_deep, row_length, column_length);
 		for (int row = 0; row < row_length; row++) {
 			//先确定异常边界
 			int top=0, bottom = row_length;
@@ -150,16 +154,29 @@ void __stdcall aggregate_cost(INT32 result[], INT16 diff[], const INT32 diff_str
 				}
 				//求和 SAD
 				INT32 sad = 0;
-				for (int i = top; i < bottom; i++) {
+				/*for (int i = top; i < bottom; i++) {
 					for (int j = left; j < right; j++) {
 						sad += diff_this_deep[i*S_row + j*S_column];
 					}
+				}*/
+				//换用积分图
+				sad = integral_result[(bottom - 1)*column_length + (right - 1)];
+
+				if (left >0) {
+					sad -= integral_result[(bottom - 1)*column_length + (left - 1)];
+				}
+				if (top > 0&& left >0) {
+					sad += integral_result[(top-1)*column_length + (left - 1)];
+				}
+				if (top > 0) {
+					sad -= integral_result[(top-1)*column_length + (right - 1)];
 				}
 				//归一化
 				INT32 sad_normal = 100 * sad / (bottom - top) / (right - left);
 				result[row*S_row_r + column*S_column_r + d*S_deep_r] = sad_normal;
 			}
 		}
+		delete(integral_result);
 	}
 }
 //动态规划
@@ -338,7 +355,7 @@ void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const 
 	//column length
 	int column_length = shapes[1];
 	//差分结果
-	INT16 * temp = (INT16*)malloc(sizeof(INT16)*row_length*column_length);
+	INT16 * temp = new INT16[row_length*column_length];
 	//row and column size
 	const int S0 = strides[0] / sizeof(INT16);
 	const int S1 = strides[1] / sizeof(INT16);
