@@ -186,7 +186,7 @@ class StereoVisionBM2:
         后处理 处理视差检后的结果
         :return:
         """
-        for row in np.arange(self.row_length):
+        '''for row in np.arange(self.row_length):
             for column in np.arange(self.column_length):
                 if self.left_right_result[row][column]:
                     left_pos = column - self.window_size / 2 \
@@ -206,17 +206,32 @@ class StereoVisionBM2:
                         for j in np.arange(left_pos, right_pos):
                             if self.left_right_result[i][j] <= 8:
                                 vote[self.my_result[i][j]] += 1
-                    self.my_result[row][column] = np.argmax(vote)
+                    self.my_result[row][column] = np.argmax(vote)'''
+        post_processing_cpp = self.dll.post_processing
+        import ctypes
+        post_processing_cpp.restype = ctypes.c_void_p
+        post_processing_cpp.argtypes = [
+            np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+            np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+            np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+            np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+            ctypes.c_int32,
+            ctypes.c_int32,
+        ]
+        strides = np.array(left.strides, dtype=np.int32)
+        shapes = np.array(left.shape, dtype=np.int32)
+        post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, window_size, d_max)
+
         return self.my_result.copy()
 
-    def low_texture_detection(self):
+    def low_texture_detection(self, texture_range=1):
         """
         低纹理区域检测
         :return: 检测结果
         """
         func = low_texture_detection_cpp_func(self.dll)
         result = np.zeros(left.shape, np.int16)
-        low_texture_detection_cpp(func, result, self.left, self.window_size, 5)
+        low_texture_detection_cpp(func, result, self.left, self.window_size, self.window_size * texture_range)
         result = filters.median_filter(result, 3)
         return result
 

@@ -293,6 +293,53 @@ void __stdcall left_right_check(INT16 result[], INT16 left[], INT16 right[], con
 	}
 }
 
+//视差后处理
+void __stdcall post_processing(INT16 result[], const INT16 left_right_result[], const INT32 strides[], const INT32 shapes[],const INT32 window_size,const INT32 d_max) {
+	//row length
+	int row_length = shapes[0];
+	//column length
+	int column_length = shapes[1];
+	//row and column size
+	int S0 = strides[0] / sizeof(INT16);
+	int S1 = strides[1] / sizeof(INT16);
+	int* vote = new int[d_max * 16];
+	for (int row = 0; row < row_length; row++) {
+		for (int column = 0; column < column_length; column++) {
+			int pos = row*S0 + column*S1;
+			if (left_right_result[pos]) {
+				memset(vote, 0, sizeof(int)*d_max * 16);
+				//得到窗口
+				int top = row - window_size / 2;
+				if (top < 0) { top = 0; }
+				int bottom = row + window_size / 2 + 1;
+				if (bottom > row_length) { bottom = row_length; }
+				int left = column - window_size / 2;
+				if (left < 0) { left = 0; }
+				int right = column + window_size / 2 + 1;
+				if (right > column_length) { right = column_length; } 
+				//vote计算
+				for (int i = top; i < bottom; i++) {
+					int offset_base = i*S0;
+					for (int j = left; j < right; j++) {
+						if (left_right_result[offset_base + j*S1] <=8) {
+							vote[result[offset_base + j*S1]] += 1;
+						}
+					}
+				}
+				//求取最大下标
+				INT16 max = 0;
+				for (int i = 1; i < d_max * 16; i++) {
+					if (vote[i] > vote[max]) {
+						max = i;
+					}
+				}
+				//回写完成
+				result[pos] = max;
+			}
+		}
+	}
+}
+
 //视差计算
 void __stdcall get_result(INT16 result[], const INT32 sad_diff[], const INT32 strides[], const INT32 shapes[] ) {
 	//row length
@@ -349,6 +396,7 @@ int __stdcall subpixel_calculator(int d,int f_d,int f_d_l,int f_d_r) {
 		return d;
 	}
 }
+//低纹理检测
 void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range) {
 	//row length
 	int row_length = shapes[0];
