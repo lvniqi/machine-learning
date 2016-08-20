@@ -223,7 +223,7 @@ class StereoVisionBM2:
         strides = np.array(self.left.strides, dtype=np.int32)
         shapes = np.array(self.left.shape, dtype=np.int32)
         post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, self.window_size, self.d_max)
-
+        self.my_result = filters.median_filter(self.my_result, 3)
         return self.my_result.copy()
 
     def fix_low_texture(self):
@@ -239,6 +239,16 @@ class StereoVisionBM2:
                     for right in range(column, self.low_texture.shape[1]):
                         if not self.low_texture[row][right]:
                             break
+                    # fix
+                    if left == 0:
+                        for left in range(right + 1, self.low_texture.shape[1]):
+                            if not self.low_texture[row][left]:
+                                break
+                    elif right == self.low_texture.shape[1]:
+                        for right in range(left - 1, -1, -1):
+                            if not self.low_texture[row][right]:
+                                break
+
                     # find top
                     for top in range(row, -1, -1):
                         if not self.low_texture[top][column]:
@@ -247,6 +257,17 @@ class StereoVisionBM2:
                     for bottom in range(row, self.low_texture.shape[0]):
                         if not self.low_texture[bottom][column]:
                             break
+
+                    # fix
+                    if top == 0:
+                        for top in range(bottom + 1, self.low_texture.shape[0]):
+                            if not self.low_texture[top][column]:
+                                break
+                    if bottom == self.low_texture.shape[0]:
+                        for bottom in range(top - 1, -1, -1):
+                            if not self.low_texture[bottom][column]:
+                                break
+
                     value_left = self.my_result[row][left]
                     value_right = self.my_result[row][right]
                     step = (value_right - value_left) * 1.0 / (right - left)
@@ -255,18 +276,20 @@ class StereoVisionBM2:
                     value_top = self.my_result[top][column]
                     value_bottom = self.my_result[bottom][column]
                     step_2 = (value_bottom - value_top) * 1.0 / (bottom - top)
-                    value_2 = value_top + step * (bottom - top)
-                    if value == value_2:
-                        self.my_result[row][column] = value
-                    elif np.abs(value - value_2) < 4 * 16:
+                    value_2 = value_top + step_2 * (row - top)
+                    if value < 0:
+                        value = 0
+                    if value_2 < 0:
+                        value_2 = 0
+                    if np.abs(value - value_2) < 4 * 16:
                         self.my_result[row][column] = (value + value_2) / 2
                     else:
                         pass
-                        #self.my_result[row][column] = 0
-                        #self.my_result[row][column] = (value + value_2) / 2
+                        # self.my_result[row][column] = 0
+                        # self.my_result[row][column] = (value + value_2) / 2
         return self.my_result
 
-    def low_texture_detection(self, texture_range=1):
+    def low_texture_detection(self, texture_range=1.0):
         """
         低纹理区域检测
         :return: 检测结果
