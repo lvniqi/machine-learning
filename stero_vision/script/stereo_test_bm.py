@@ -322,7 +322,36 @@ if __name__ == '__main__':
     for row in range(low_texture.shape[0]):
         for column in range(low_texture.shape[1]):
             if low_texture[row][column]:
-                post_result[row][column] = 0
+                (left, right, top, bottom) = (0, 0, 0, 0)
+                # find left
+                for left in range(column, -1, -1):
+                    if not low_texture[row][left]:
+                        break
+                # find right
+                for right in range(column, low_texture.shape[1]):
+                    if not low_texture[row][right]:
+                        break
+                # find top
+                for top in range(row, -1, -1):
+                    if not low_texture[top][column]:
+                        break
+                # find bottom
+                for bottom in range(row, low_texture.shape[0]):
+                    if not low_texture[bottom][column]:
+                        break
+                value_left = post_result[row][left]
+                value_right = post_result[row][right]
+                step = (value_right - value_left) * 1.0 / (right - left)
+                value = value_left + step * (column - left)
+
+                value_top = post_result[top][column]
+                value_bottom = post_result[bottom][column]
+                step_2 = (value_bottom - value_top) * 1.0 / (bottom - top)
+                value_2 = value_top + step * (bottom - top)
+                if value == value_2:
+                    post_result[row][column] = value
+                else:
+                    post_result[row][column] = (value+value_2)/2
 
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
