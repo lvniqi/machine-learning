@@ -19,13 +19,13 @@ class StereoVisionBM2:
         self.my_result = np.zeros(left.shape, dtype=np.int16)
         if is_color:
             (self.row_length, self.column_length, temp) = left.shape
-            self.left_extend = self.make_border_rgb(self.left, window_size, d_max)
-            self.right_extend = self.make_border_rgb(self.right, window_size, d_max)
+            self.left_extend = self.make_border_rgb(self.left, d_max)
+            self.right_extend = self.make_border_rgb(self.right, d_max)
         else:
 
             (self.row_length, self.column_length) = left.shape
-            self.left_extend = self.make_border(self.left, window_size, d_max)
-            self.right_extend = self.make_border(self.right, window_size, d_max)
+            self.left_extend = self.make_border(self.left, d_max)
+            self.right_extend = self.make_border(self.right, d_max)
         self.window_size = window_size
         self.d_max = d_max
 
@@ -45,7 +45,7 @@ class StereoVisionBM2:
         self.low_texture = None
 
     @staticmethod
-    def make_border(image, window_size, d_max):
+    def make_border(image, d_max):
         new_image = image
 
         left = new_image[:, 0:1]
@@ -60,7 +60,7 @@ class StereoVisionBM2:
         return new_image
 
     @staticmethod
-    def make_border_rgb(image, window_size, d_max):
+    def make_border_rgb(image, d_max):
         new_image = image
 
         left = new_image[:, 0:1, :]
@@ -289,7 +289,7 @@ class StereoVisionBM2:
                         # self.my_result[row][column] = (value + value_2) / 2
         return self.my_result
 
-    def low_texture_detection(self, texture_range=1.0):
+    def low_texture_detection(self, texture_range=0.5):
         """
         低纹理区域检测
         :return: 检测结果

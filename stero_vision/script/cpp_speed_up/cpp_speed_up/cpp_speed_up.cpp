@@ -403,7 +403,7 @@ void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const 
 	//column length
 	int column_length = shapes[1];
 	//差分结果
-	INT16 * temp = new INT16[row_length*column_length];
+	INT16 * difference_integral = new INT16[row_length*column_length];
 	//row and column size
 	const int S0 = strides[0] / sizeof(INT16);
 	const int S1 = strides[1] / sizeof(INT16);
@@ -414,26 +414,56 @@ void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const 
 		for (int column = 0; column < column_length - 1; column++) {
 			int pos_temp = row*column_length + column;
 			int pos = row*S0 + column*S1;
-			int pos_next = pos + 2*S1;
+			int pos_next = pos + S1;
 			if (image[pos] > image[pos_next]) {
-				temp[pos_temp] = image[pos] - image[pos_next];
+				difference_integral[pos_temp] = image[pos] - image[pos_next];
 			}
 			else {
-				temp[pos_temp] = image[pos_next] - image[pos];
+				difference_integral[pos_temp] = image[pos_next] - image[pos];
+			}
+			//进行积分
+			if (column > 0) {
+				difference_integral[pos_temp] += difference_integral[pos_temp - 1];
 			}
 		}
 	}
 	for (int row = 0; row < row_length; row++) {
 		for (int column = 0; column < column_length - window_size; column++) {
-			int pos_temp = row*column_length + column;
+			int pos_difference = row*column_length + column;
 			int pos = row*S0 + (column + window_size / 2)*S1;
 			int sum = 0;
-			for (int i = 0; i < window_size; i++) {
-				sum += temp[pos_temp];
-				pos_temp++;
+			
+			sum = difference_integral[pos_difference + window_size-1];
+			if (column > 0) {
+				sum -= difference_integral[pos_difference - 1];
 			}
 			if (sum < texture_range) {
-				result[pos] = 255;
+				//获取计数 用于统计连续无纹理区域
+				int low_count = 1;
+				if (column + window_size / 2>0) {
+					low_count += result[pos - 1];
+				}
+				result[pos] = low_count;
+				//对之前的数据进行更新
+				for (int i = pos-1; i >= row*S0; i--) {
+					if (result[i]) {
+						result[i] = low_count;
+					}
+					else {
+						break;
+					}
+				}
+				//边缘区域修正
+				if (column == 0) {
+					for (int i = 0; i <= window_size / 2; i++) {
+						result[pos-i] = low_count;
+					}
+				}
+				else if (column == column_length - window_size - 1) {
+					for (int i = 0; i <= window_size / 2; i++) {
+						result[pos+i] = low_count;
+					}
+				}
 			}
 			else {
 				result[pos] = 0;

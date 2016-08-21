@@ -27,7 +27,7 @@ class StereoVisionCensus_BT(StereoVisionBM2):
         # print 'calcute right census'
         right_census = get_census_cpp(self.get_census_cpp_func, self.right, self.census_size)
         # right_census = self.get_census(self.right, self.census_size)
-        self.right_census_extend = self.make_border_rgb(right_census, self.window_size, self.d_max)
+        self.right_census_extend = self.make_border_rgb(right_census, self.d_max)
 
         for d in range(self.d_max):
             # print 'compute_cost_d:', d
