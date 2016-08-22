@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ctypes
 
-sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus', 'mydata_1']
+sub_folders = ['barn2', 'bull', 'cones', 'poster', 'sawtooth', 'teddy', 'tsukuba', 'venus', 'mydata_1','mydata_2']
 
 
 def get_dll_folder():

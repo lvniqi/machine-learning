@@ -328,13 +328,23 @@ void __stdcall post_processing(INT16 result[], const INT16 left_right_result[], 
 				}
 				//求取最大下标
 				INT16 max = 0;
+				INT16 max_l = 0;
 				for (int i = 1; i < d_max * 16; i++) {
 					if (vote[i] > vote[max]) {
 						max = i;
+						max_l = max;
 					}
 				}
-				//回写完成
-				result[pos] = max;
+				INT32 SUM = vote[max] + vote[max_l];
+				if (SUM > 0) {
+					INT32 P1 = 100 * vote[max] / (SUM);
+					INT32 P2 = 100 - P1;
+					//回写完成
+					result[pos] = (max*P1 + max_l*P2) / 100;
+				}
+				else {
+					;
+				}
 			}
 		}
 	}
