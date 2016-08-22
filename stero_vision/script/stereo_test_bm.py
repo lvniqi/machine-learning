@@ -7,7 +7,8 @@ Created on Sun Jul 10 17:51:18 2016
 
 from common import get_data_set, show_image, save_image, get_dll, get_aggregate_cost_cpp_func, compute_cost_d_cpp, \
     aggregate_cost_cpp, get_compute_cost_d_cpp_func, get_result_cpp_func, get_result_cpp, get_left_right_check_cpp_func, \
-    left_right_check_cpp, low_texture_detection_cpp_func, low_texture_detection_cpp
+    left_right_check_cpp, low_texture_detection_cpp_func, low_texture_detection_cpp, get_aggregate_cost_window_cpp_func, \
+    aggregate_cost_window_cpp
 import numpy as np
 from scipy.ndimage import filters
 
@@ -42,7 +43,7 @@ class StereoVisionBM2:
         self.compute_cost_d_cpp_func = get_compute_cost_d_cpp_func(self.dll)
         self.aggregate_cost_cpp_func = get_aggregate_cost_cpp_func(self.dll)
 
-        self.low_texture = None
+        self.low_texture_column = None
 
     @staticmethod
     def make_border(image, d_max):
@@ -97,8 +98,15 @@ class StereoVisionBM2:
         if is_python:
             self.sad_left_result = self.aggregate_cost_python()
         else:
-            self.sad_left_result = aggregate_cost_cpp(self.aggregate_cost_cpp_func, self.left_diff, self.window_size)
-
+            # self.sad_left_result = aggregate_cost_cpp(self.aggregate_cost_cpp_func, self.left_diff, self.window_size)
+            # 自适应窗口聚合函数
+            # '''
+            aggregate_cost_window_cpp_func = get_aggregate_cost_window_cpp_func(self.dll)
+            self.sad_left_result = aggregate_cost_window_cpp(aggregate_cost_window_cpp_func,
+                                                             self.left_diff,
+                                                             self.low_texture_row, self.low_texture_column,
+                                                             self.window_size, self.window_size * 5)
+            # '''
         for i in np.arange(self.d_max):
             left_sad = self.sad_left_result[:, :, i].copy()
             left_sad = left_sad[:, i:]
@@ -227,45 +235,45 @@ class StereoVisionBM2:
         return self.my_result.copy()
 
     def fix_low_texture(self):
-        for row in range(self.low_texture.shape[0]):
-            for column in range(self.low_texture.shape[1]):
-                if self.low_texture[row][column]:
+        for row in range(self.low_texture_column.shape[0]):
+            for column in range(self.low_texture_column.shape[1]):
+                if self.low_texture_column[row][column]:
                     (left, right, top, bottom) = (0, 0, 0, 0)
                     # find left
                     for left in range(column, -1, -1):
-                        if not self.low_texture[row][left]:
+                        if not self.low_texture_column[row][left]:
                             break
                     # find right
-                    for right in range(column, self.low_texture.shape[1]):
-                        if not self.low_texture[row][right]:
+                    for right in range(column, self.low_texture_column.shape[1]):
+                        if not self.low_texture_column[row][right]:
                             break
                     # fix
                     if left == 0:
-                        for left in range(right + 1, self.low_texture.shape[1]):
-                            if not self.low_texture[row][left]:
+                        for left in range(right + 1, self.low_texture_column.shape[1]):
+                            if not self.low_texture_column[row][left]:
                                 break
-                    elif right == self.low_texture.shape[1]:
+                    elif right == self.low_texture_column.shape[1]:
                         for right in range(left - 1, -1, -1):
-                            if not self.low_texture[row][right]:
+                            if not self.low_texture_column[row][right]:
                                 break
 
                     # find top
                     for top in range(row, -1, -1):
-                        if not self.low_texture[top][column]:
+                        if not self.low_texture_column[top][column]:
                             break
                     # find bottom
-                    for bottom in range(row, self.low_texture.shape[0]):
-                        if not self.low_texture[bottom][column]:
+                    for bottom in range(row, self.low_texture_column.shape[0]):
+                        if not self.low_texture_column[bottom][column]:
                             break
 
                     # fix
                     if top == 0:
-                        for top in range(bottom + 1, self.low_texture.shape[0]):
-                            if not self.low_texture[top][column]:
+                        for top in range(bottom + 1, self.low_texture_column.shape[0]):
+                            if not self.low_texture_column[top][column]:
                                 break
-                    if bottom == self.low_texture.shape[0]:
+                    if bottom == self.low_texture_column.shape[0]:
                         for bottom in range(top - 1, -1, -1):
-                            if not self.low_texture[bottom][column]:
+                            if not self.low_texture_column[bottom][column]:
                                 break
 
                     value_left = self.my_result[row][left]
@@ -289,16 +297,20 @@ class StereoVisionBM2:
                         # self.my_result[row][column] = (value + value_2) / 2
         return self.my_result
 
-    def low_texture_detection(self, texture_range=0.5):
+    def low_texture_detection(self, texture_range=1.0):
         """
         低纹理区域检测
         :return: 检测结果
         """
         func = low_texture_detection_cpp_func(self.dll)
-        result = np.zeros(self.left.shape, np.int16)
-        low_texture_detection_cpp(func, result, self.left, self.window_size, int(self.window_size * texture_range))
-        self.low_texture = filters.median_filter(result, 3)
-        return self.low_texture.copy()
+        result_column = np.zeros(self.left.shape, np.int16)
+        result_row = np.zeros(self.left.shape, np.int16)
+        low_texture_detection_cpp(func, result_row, result_column, self.left, self.window_size,
+                                  int(self.window_size * texture_range))
+        self.low_texture_column = filters.median_filter(result_column, 3)
+        self.low_texture_row = filters.median_filter(result_row, 3)
+        # return self.low_texture_column.copy()
+        return (self.low_texture_row.copy(), self.low_texture_column.copy())
 
     @staticmethod
     def gaussian_filter(image_in, sigma=1.5):
@@ -369,14 +381,16 @@ if __name__ == '__main__':
     d_max = 32
     tt = time.time()
     stereo = StereoVisionBM2(left, right, window_size, d_max)
+
+    (low_texture_row, low_texture_column) = stereo.low_texture_detection()
+    data_set['low_texture_row'] = low_texture_row
+    data_set['low_texture_column'] = low_texture_column
+
     stereo.compute_cost()
     t_diff = stereo.aggregate_cost()
     my_result = stereo.get_result()
     my_result = my_result * (255.0 / d_max / 16)
     data_set['my_result_7'] = my_result
-
-    low_texture = stereo.low_texture_detection()
-    data_set['low_texture'] = low_texture
 
     diff_result = stereo.left_right_check()
     diff_result = diff_result * (255.0 / d_max / 16)
@@ -386,14 +400,15 @@ if __name__ == '__main__':
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
-    post_result2 = stereo.fix_low_texture()
-    post_result2 = post_result2 * (255.0 / d_max / 16)
-    data_set['post_result2'] = post_result2
-
-    show_image(data_set)
+    # post_result2 = stereo.fix_low_texture()
+    # post_result2 = post_result2 * (255.0 / d_max / 16)
+    # data_set['post_result2'] = post_result2
     print time.time() - tt
+    show_image(data_set)
+
     save_image(diff_result, 'diff_result')
     save_image(post_result, 'post_result')
-    save_image(post_result2, 'post2_result')
-    save_image(low_texture, 'low_texture')
+    # save_image(post_result2, 'post2_result')
+    save_image(low_texture_column, 'low_texture_column')
+    save_image(low_texture_row, 'low_texture_row')
     save_image(my_result, 'window method 7')

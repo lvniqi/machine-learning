@@ -31,4 +31,6 @@ extern "C" _declspec(dllexport) INT16 __stdcall get_hamming_distance(const BOOLE
 extern "C" _declspec(dllexport) void __stdcall compute_cost_census_d(INT16 result[], BOOLEAN left[], BOOLEAN right[], const INT16 strides[], const INT16 shapes[]);
 
 /*-------------低纹理区域检测-------------*/
-extern "C" _declspec(dllexport) void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range);
+extern "C" _declspec(dllexport) void __stdcall low_texture_detection(INT16 row_result[], INT16 column_result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range);
+//代价聚合 使用低纹理区域检测获得的窗口
+extern "C" _declspec(dllexport) void __stdcall aggregate_cost_window(INT32 result[], INT16 diff[], const INT32 diff_strides[], const INT32 result_strides[], const INT16 shapes[], const INT16 row_window[],const INT16 column_window[],const INT16 window_size_min,const INT16 window_size_max);

@@ -150,6 +150,48 @@ def get_aggregate_cost_cpp_func(dll):
     return aggregate_cost
 
 
+def get_aggregate_cost_window_cpp_func(dll):
+    """
+    窗口代价聚合函数
+    :param dll: dll文件
+    :return: 代价聚合函数
+    """
+    aggregate_cost_window = dll.aggregate_cost_window
+
+    aggregate_cost_window.restype = ctypes.c_void_p
+    aggregate_cost_window.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=3),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=1),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        ctypes.c_int16,
+        ctypes.c_int16,
+    ]
+    return aggregate_cost_window
+
+
+def aggregate_cost_window_cpp(func, diff, row_window, column_window, window_min, window_max):
+    """
+    窗口代价聚合python包装
+    :param func: 窗口代价聚合函数
+    :param diff: 左右图差异
+    :param row_window: 行窗口图
+    :param column_window: 列窗口图
+    :param window_min: 最小窗口
+    :param window_max: 最大窗口
+    :return: 聚合后的代价值
+    """
+    shapes = np.array(diff.shape, dtype=np.int16)
+    diff_strides = np.array(diff.strides, dtype=np.int32)
+    result = np.zeros((diff.shape[1], diff.shape[2], diff.shape[0]), dtype=np.int32)
+    result_strides = np.array(result.strides, dtype=np.int32)
+    func(result, diff, diff_strides, result_strides, shapes, row_window, column_window, window_min, window_max)
+    return result
+
+
 def aggregate_cost_cpp(func, diff, window_size):
     """
     代价聚合python包装
@@ -294,6 +336,7 @@ def low_texture_detection_cpp_func(dll):
     low_texture_detection.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
         np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
+        np.ctypeslib.ndpointer(dtype=np.int16, ndim=2),
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1),
         ctypes.c_int32,
@@ -302,17 +345,17 @@ def low_texture_detection_cpp_func(dll):
     return low_texture_detection
 
 
-def low_texture_detection_cpp(func, result, image, window_size, texture_range):
+def low_texture_detection_cpp(func, result_row, result_column, image, window_size, texture_range):
     """
     低纹理区域检查python包装
     :param func: 低纹理区域检查函数
-    :param result: 纹理结果
+    :param result_column: 纹理结果
     :param image: 图像
     :param texture_range:纹理阈值
     """
     strides = np.array(image.strides, dtype=np.int32)
     shapes = np.array(image.shape, dtype=np.int32)
-    func(result, image, strides, shapes, window_size, texture_range)
+    func(result_row, result_column, image, strides, shapes, window_size, texture_range)
 
 
 def get_data_folder(sub_folder='barn2'):

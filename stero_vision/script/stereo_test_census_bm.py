@@ -104,10 +104,10 @@ if __name__ == '__main__':
     import time
 
     window_size = 7
-    d_max = 20
+    d_max = 32
     tt = time.time()
     stereo = StereoVisionCensus_BT(left, right, window_size, d_max)
-    low_texture = stereo.low_texture_detection()
+    low_texture = stereo.low_texture_detection()[0]
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
@@ -115,10 +115,9 @@ if __name__ == '__main__':
     diff_result = stereo.left_right_check()
 
     post_result = stereo.post_processing()
-    #post_result2 = stereo.fix_low_texture()
+    # post_result2 = stereo.fix_low_texture()
 
     print "use time:", time.time() - tt
-    low_texture = stereo.low_texture_detection()
     data_set['low_texture'] = low_texture
 
     my_result = my_result * (255.0 / d_max / 16)
@@ -131,11 +130,11 @@ if __name__ == '__main__':
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
-    #post_result2 = post_result2 * (255.0 / d_max / 16)
-    #data_set['post_result2'] = post_result2
+    # post_result2 = post_result2 * (255.0 / d_max / 16)
+    # data_set['post_result2'] = post_result2
 
     show_image(data_set)
     save_image(my_result, 'window method Census BM')
     save_image(diff_result, 'window method Census BM diff_result')
     save_image(post_result, 'window method Census BM post_result')
-    #save_image(post_result2, 'window method Census BM post_result2')
+    # save_image(post_result2, 'window method Census BM post_result2')

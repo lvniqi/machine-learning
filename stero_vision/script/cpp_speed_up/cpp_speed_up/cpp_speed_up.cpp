@@ -397,7 +397,7 @@ int __stdcall subpixel_calculator(int d,int f_d,int f_d_l,int f_d_r) {
 	}
 }
 //低纹理检测
-void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range) {
+void __stdcall low_texture_detection(INT16 row_result[], INT16 column_result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range) {
 	//row length
 	int row_length = shapes[0];
 	//column length
@@ -441,13 +441,13 @@ void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const 
 				//获取计数 用于统计连续无纹理区域
 				int low_count = 1;
 				if (column + window_size / 2>0) {
-					low_count += result[pos - 1];
+					low_count += column_result[pos - 1];
 				}
-				result[pos] = low_count;
+				column_result[pos] = low_count;
 				//对之前的数据进行更新
 				for (int i = pos-1; i >= row*S0; i--) {
-					if (result[i]) {
-						result[i] = low_count;
+					if (column_result[i]) {
+						column_result[i] = low_count;
 					}
 					else {
 						break;
@@ -456,18 +456,130 @@ void __stdcall low_texture_detection(INT16 result[], const INT16 image[], const 
 				//边缘区域修正
 				if (column == 0) {
 					for (int i = 0; i <= window_size / 2; i++) {
-						result[pos-i] = low_count;
+						column_result[pos-i] = low_count;
 					}
 				}
 				else if (column == column_length - window_size - 1) {
 					for (int i = 0; i <= window_size / 2; i++) {
-						result[pos+i] = low_count;
+						column_result[pos+i] = low_count;
 					}
 				}
 			}
 			else {
-				result[pos] = 0;
+				column_result[pos] = 0;
 			}
 		}
+	}
+	delete(difference_integral);
+	//得到低纹理行窗口
+	for (int column = 0; column < column_length - window_size; column++) {
+		for (int row = 0; row < row_length; row++) {
+			int pos = row*S0 + column*S1;
+			if (column_result[pos]) {
+				int low_count = 1;
+				if (row > 0) {
+					low_count += row_result[pos - row*S0];
+				}
+				row_result[pos] = low_count;
+				//对之前的数据进行更新
+				for (int i = pos - S0; i >= 0; i -= S0) {
+					if (row_result[i]) {
+						row_result[i] = low_count;
+					}
+					else {
+						break;
+					}
+				}
+				
+			}
+		}
+	}
+}
+//代价聚合 使用低纹理区域检测获得的窗口
+void __stdcall aggregate_cost_window(INT32 result[], INT16 diff[], const INT32 diff_strides[], const INT32 result_strides[], const INT16 shapes[], const INT16 row_window[], const INT16 column_window[], const INT16 window_size_min, const INT16 window_size_max) {
+	//deep length
+	int d_max = shapes[0];
+	//row length
+	int row_length = shapes[1];
+	//column length
+	int column_length = shapes[2];
+	//deep size
+	int S_deep = diff_strides[0] / sizeof(INT16);
+	//row size
+	int S_row = diff_strides[1] / sizeof(INT16);
+	//column size
+	int S_column = diff_strides[2] / sizeof(INT16);
+
+
+	//result row size
+	int S_row_r = result_strides[0] / sizeof(INT32);
+	//result column size
+	int S_column_r = result_strides[1] / sizeof(INT32);
+	//result deep size
+	int S_deep_r = result_strides[2] / sizeof(INT32);
+	//printf("row_length:%d column_length:%d d_max:%d\r\n", row_length,column_length,d_max);
+	for (int d = 0; d < d_max; d++) {
+		//printf("d:%d\r\n", d);
+		INT16* diff_this_deep = &(diff[S_deep*d]);
+		//得到积分图
+		INT32* integral_result = new INT32[row_length*column_length];
+		integral(integral_result, diff_this_deep, row_length, column_length);
+		for (int row = 0; row < row_length; row++) {
+			for (int column = 0; column < column_length; column++) {
+				//行窗口大小
+				int pos = row*column_length + column;
+				int row_window_size = row_window[pos];
+				int column_window_size = column_window[pos];
+				//边界检查
+				if (row_window_size < window_size_min) {
+					row_window_size = window_size_min;
+				}
+				else if (row_window_size > window_size_max) {
+					row_window_size = window_size_max;
+				}
+				if (column_window_size < window_size_min) {
+					column_window_size = window_size_min;
+				}
+				else if (column_window_size > window_size_max) {
+					column_window_size = window_size_max;
+				}
+
+				//先确定异常边界
+				int top = 0, bottom = row_length;
+				//如果正常 重新确定边界
+				if (row - row_window_size / 2 > 0) {
+					top = row - row_window_size / 2;
+				}
+				if (row + row_window_size / 2 + 1 <= row_length) {
+					bottom = row + row_window_size / 2 + 1;
+				}
+				//先确定异常边界
+				int left = 0, right = column_length;
+				//如果正常 重新确定边界
+				if (column - column_window_size / 2 > 0) {
+					left = column - column_window_size / 2;
+				}
+				if (column + column_window_size / 2 + 1 <= column_length) {
+					right = column + column_window_size / 2 + 1;
+				}
+
+				//求和 SAD
+				INT32 sad = integral_result[(bottom - 1)*column_length + (right - 1)];
+
+				if (left >0) {
+					sad -= integral_result[(bottom - 1)*column_length + (left - 1)];
+				}
+				if (top > 0 && left >0) {
+					sad += integral_result[(top - 1)*column_length + (left - 1)];
+				}
+				if (top > 0) {
+					sad -= integral_result[(top - 1)*column_length + (right - 1)];
+				}
+				//归一化
+				INT32 sad_normal = 100 * sad / (bottom - top) / (right - left);
+				result[row*S_row_r + column*S_column_r + d*S_deep_r] = sad_normal;
+			}
+		}
+		delete(integral_result);
 	}
 }
