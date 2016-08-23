@@ -108,7 +108,7 @@ class StereoVisionBM2:
             self.sad_left_result = aggregate_cost_window_cpp(aggregate_cost_window_cpp_func,
                                                              self.left_diff,
                                                              self.low_texture_row, self.low_texture_column,
-                                                             self.window_size, self.window_size * 2)
+                                                             self.window_size, self.window_size * 4)
             #'''
         for i in np.arange(self.d_max):
             left_sad = self.sad_left_result[:, :, i].copy()
@@ -233,7 +233,7 @@ class StereoVisionBM2:
         ]
         strides = np.array(self.left.strides, dtype=np.int32)
         shapes = np.array(self.left.shape, dtype=np.int32)
-        post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, int(self.window_size*1.2), self.d_max)
+        post_processing_cpp(self.my_result, self.left_right_result, strides, shapes, int(self.window_size/2), self.d_max)
         self.my_result = filters.median_filter(self.my_result, 3)
         return self.my_result.copy()
 
@@ -241,6 +241,7 @@ class StereoVisionBM2:
         for row in range(self.low_texture_column.shape[0]):
             for column in range(self.low_texture_column.shape[1]):
                 if self.low_texture_column[row][column]:
+                    '''
                     (left, right, top, bottom) = (0, 0, 0, 0)
                     # find left
                     for left in range(column, -1, -1):
@@ -299,18 +300,13 @@ class StereoVisionBM2:
                     if np.abs(value - value_2) < 4 * 16:
                         self.my_result[row][column] = (value + value_2) / 2
                     else:
-                        '''
-                        if self.my_result[row][column] < 16:
-                            self.my_result[row][column] = (value + value_2) / 2
-                        else:
-                            self.my_result[row][column] = (value + value_2 + self.my_result[row][column]) / 3
-                        '''
                         c1 = abs(column - left)*1.0 + abs(column - right)
                         c2 = abs(row - top)*1.0 + abs(row - bottom)
                         p1 = c1 / (c1+c2)
                         p2 = 1 - p1
                         self.my_result[row][column] = value * p2 + value_2 * p1
-                    #self.my_result[row][column] = 0
+                    '''
+                    self.my_result[row][column] = 0
         return self.my_result
 
     def low_texture_detection(self, texture_range=0.8):
@@ -386,15 +382,15 @@ class StereoVisionBM2:
 
 
 if __name__ == '__main__':
-    data_set = get_data_set(9)
+    data_set = get_data_set(0)
     # get data
     left = data_set['left']
     right = data_set['right']
     result = data_set['result']
     import time
 
-    window_size = 15
-    d_max = 64
+    window_size = 11
+    d_max = 32
     tt = time.time()
     stereo = StereoVisionBM2(left, right, window_size, d_max)
 
@@ -416,16 +412,16 @@ if __name__ == '__main__':
     post_result = post_result * (255.0 / d_max / 16)
     data_set['post_result'] = post_result
 
-    '''post_result2 = stereo.fix_low_texture()
+    post_result2 = stereo.fix_low_texture()
     post_result2 = post_result2 * (255.0 / d_max / 16)
-    post_result2 = filters.median_filter(post_result2,11)
-    data_set['post_result2'] = post_result2'''
+    post_result2 = filters.median_filter(post_result2,5)
+    data_set['post_result2'] = post_result2
     print time.time() - tt
     show_image(data_set)
 
     save_image(diff_result, 'diff_result')
     save_image(post_result, 'post_result')
-    #save_image(post_result2, 'post_result_2')
+    save_image(post_result2, 'post_result_2')
     save_image(low_texture_column, 'low_texture_column')
     save_image(low_texture_row, 'low_texture_row')
     save_image(my_result, 'window method 7')

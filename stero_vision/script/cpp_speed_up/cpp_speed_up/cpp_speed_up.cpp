@@ -307,7 +307,8 @@ void __stdcall post_processing(INT16 result[], const INT16 left_right_result[], 
 		for (int column = 0; column < column_length; column++) {
 			int pos = row*S0 + column*S1;
 			if (left_right_result[pos]) {
-				memset(vote, 0, sizeof(int)*d_max * 16);
+				//完成标志
+				bool finish_flag = false;
 				//得到窗口
 				int top = row - window_size / 2;
 				if (top < 0) { top = 0; }
@@ -316,34 +317,43 @@ void __stdcall post_processing(INT16 result[], const INT16 left_right_result[], 
 				int left = column - window_size / 2;
 				if (left < 0) { left = 0; }
 				int right = column + window_size / 2 + 1;
-				if (right > column_length) { right = column_length; } 
-				//vote计算
-				for (int i = top; i < bottom; i++) {
-					int offset_base = i*S0;
-					for (int j = left; j < right; j++) {
-						if (left_right_result[offset_base + j*S1] <=8) {
-							vote[result[offset_base + j*S1]] += 1;
+				if (right > column_length) { right = column_length; }
+				while (!finish_flag) {
+					memset(vote, 0, sizeof(int)*d_max * 16);
+					//vote计算
+					for (int i = top; i < bottom; i++) {
+						int offset_base = i*S0;
+						for (int j = left; j < right; j++) {
+							if (left_right_result[offset_base + j*S1] <= 8) {
+								vote[result[offset_base + j*S1]] += 1;
+							}
 						}
 					}
-				}
-				//求取最大下标
-				INT16 max = 0;
-				INT16 max_l = 0;
-				for (int i = 1; i < d_max * 16; i++) {
-					if (vote[i] > vote[max]) {
-						max = i;
-						max_l = max;
+					//求取最大下标
+					INT16 max = 0;
+					INT16 max_l = 0;
+					for (int i = 1; i < d_max * 16; i++) {
+						if (vote[i] > vote[max]) {
+							max = i;
+							max_l = max;
+						}
 					}
-				}
-				INT32 SUM = vote[max] + vote[max_l];
-				if (SUM > 0) {
-					INT32 P1 = 100 * vote[max] / (SUM);
-					INT32 P2 = 100 - P1;
-					//回写完成
-					result[pos] = (max*P1 + max_l*P2) / 100;
-				}
-				else {
-					;
+					INT32 SUM = vote[max] + vote[max_l];
+					int sum_size = window_size*window_size / 2;
+					//大于阈值
+					if (SUM > sum_size) {
+						INT32 P1 = 100 * vote[max] / (SUM);
+						INT32 P2 = 100 - P1;
+						//回写完成
+						result[pos] = (max*P1 + max_l*P2) / 100;
+						finish_flag = true;
+					}
+					else {
+						if (top > 0) { top -= 1; }
+						if (bottom < row_length) { bottom += 1; }
+						if (left > 0) { left -= 1; }
+						if (right < column_length) { right += 1; }
+					}
 				}
 			}
 		}
