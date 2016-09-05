@@ -18,7 +18,7 @@ class StereoVisionBM_BT(StereoVisionBM2):
 
 
 if __name__ == '__main__':
-    data_set = get_data_set(0)
+    data_set = get_data_set(1)
     # get data
     left = data_set['left']
     right = data_set['right']
@@ -29,6 +29,7 @@ if __name__ == '__main__':
     d_max = 20
     tt = time.time()
     stereo = StereoVisionBM_BT(left, right, window_size, d_max)
+    stereo.low_texture_detection()
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
