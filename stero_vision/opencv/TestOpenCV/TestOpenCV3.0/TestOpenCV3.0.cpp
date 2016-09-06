@@ -59,12 +59,12 @@ namespace {
 		Ptr<StereoBM> bm = StereoBM::create(numberOfDisparities, 15);
 		Ptr<StereoSGBM> sgbm = StereoSGBM::create(0, numberOfDisparities,15);
 		bm->setPreFilterType(CV_STEREO_BM_NORMALIZED_RESPONSE);
-		bm->setPreFilterSize(5);
+		//bm->setPreFilterSize(5);
 		bm->setPreFilterCap(63);
-		bm->setBlockSize(15);
+		bm->setBlockSize(25);
 		bm->setNumDisparities(numberOfDisparities);
 		bm->setTextureThreshold(20);
-		bm->setUniquenessRatio(10);
+		bm->setUniquenessRatio(15);
 		bm->setSpeckleWindowSize(100);
 		bm->setSpeckleRange(32);
 		bm->setDisp12MaxDiff(2);
@@ -104,6 +104,7 @@ namespace {
 		for (;;) {
 			Mat frame_all;
 			capture >> frame_all;
+			//medianBlur(frame_all, frame_all, 3);
 			frame[0] = Mat(frame_all, Rect(0, 0, 640, 480));
 			frame[1] = Mat(frame_all, Rect(640, 0, 640, 480));
 			for (int i = 0; i < 2; i++) { 
@@ -116,7 +117,7 @@ namespace {
 				imshow(window_names[i], frame[i]);
 			}
 			calcu_stereo(frame[0], frame[1]);
-			char key = (char)waitKey(30); //delay N millis, usually long enough to display and capture input
+			char key = (char)waitKey(1); //delay N millis, usually long enough to display and capture input
 
 			switch (key) {
 			case 'q':
