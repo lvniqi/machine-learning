@@ -382,15 +382,15 @@ class StereoVisionBM2:
 
 
 if __name__ == '__main__':
-    data_set = get_data_set(0)
+    data_set = get_data_set(9)
     # get data
     left = data_set['left']
     right = data_set['right']
     result = data_set['result']
     import time
 
-    window_size = 11
-    d_max = 32
+    window_size = 19
+    d_max = 64
     tt = time.time()
     stereo = StereoVisionBM2(left, right, window_size, d_max)
 

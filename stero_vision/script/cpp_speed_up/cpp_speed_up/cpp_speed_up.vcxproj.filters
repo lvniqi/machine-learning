@@ -41,5 +41,8 @@
     <ClCompile Include="census.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="semi_grobal_match.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
