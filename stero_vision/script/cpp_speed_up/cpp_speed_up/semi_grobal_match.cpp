@@ -1,7 +1,9 @@
 #include "stdafx.h"
 #include "cpp_speed_up.h"
 #include <math.h>
-
+#include <windows.h>
+#include <process.h>
+#include <time.h>
 void __stdcall DP_init_top(INT32 cost[], const  INT32 sad[], const INT32 row_length, const INT32 column_length, const INT32 d_max) {
 	//初始化 遍历第一行所有数据
 	for (int column = 0; column < column_length; column++) {
@@ -42,6 +44,14 @@ void __stdcall DP_init_right(INT32 cost[], const  INT32 sad[], const INT32 row_l
 	}
 }
 
+typedef struct _func_arg {
+	INT32* cost;
+	const INT32* sad;
+	const INT32 row_length;
+	const INT32 column_length;
+	const INT32 d_max;
+	const float p;
+}func_arg;
 
 //动态规划 简化版 基础
 void __stdcall DP_search_base(INT32 cost[], const  INT32 sad[], const INT32 row_length, const INT32 column_length, const INT32 d_max, const float p) {
@@ -379,10 +389,96 @@ void __stdcall DP_search_315(INT32 cost[], const  INT32 sad[], const INT32 row_l
 		}
 	}
 }
-
-
+void thread_forward(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_forward(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_reverse(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_reverse(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_up(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_up(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_down(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_down(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_45(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_45(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_135(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_135(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_225(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_225(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
+void thread_315(void* arg_in) {
+	func_arg* arg = (func_arg*)arg_in;
+	INT32 * cost = arg->cost;
+	const INT32 * sad = arg->sad;
+	const INT32 row_length = arg->row_length;
+	const INT32 column_length = arg->column_length;
+	const INT32 d_max = arg->d_max;
+	const float p = arg->p;
+	DP_search_315(cost, sad, row_length, column_length, d_max, p);
+	_endthread();
+}
 //动态规划 简化版 X
-void __stdcall SGM_search(INT32 cost[], const  INT32 sad[], const INT32 row_length, const INT32 column_length, const INT32 d_max, const float p) {
+void __stdcall SGM_search(INT32 cost[],const INT32 sad[], const INT32 row_length, const INT32 column_length, const INT32 d_max, const float p) {
 	INT32* cost_forward = new INT32[row_length*column_length*d_max];
 	INT32* cost_reverse = new INT32[row_length*column_length*d_max];
 	INT32* cost_up = new INT32[row_length*column_length*d_max];
@@ -391,15 +487,31 @@ void __stdcall SGM_search(INT32 cost[], const  INT32 sad[], const INT32 row_leng
 	INT32* cost_135 = new INT32[row_length*column_length*d_max];
 	INT32* cost_225 = new INT32[row_length*column_length*d_max]; 
 	INT32* cost_315 = new INT32[row_length*column_length*d_max];
-	DP_search_forward(cost_forward, sad, row_length, column_length, d_max, p);
-	DP_search_reverse(cost_reverse, sad, row_length, column_length, d_max, p);
-	DP_search_up(cost_up, sad, row_length, column_length, d_max, p);
-	DP_search_down(cost_down, sad, row_length, column_length, d_max, p);
+	func_arg arg_forward = {cost_forward , sad, row_length, column_length, d_max, p };
+	_beginthread(thread_forward, 0, (void*)&arg_forward);
+	func_arg arg_reverse = { cost_reverse , sad, row_length, column_length, d_max, p };
+	_beginthread(thread_reverse, 0, (void*)&arg_reverse);
+	func_arg arg_up = { cost_up , sad, row_length, column_length, d_max, p };
+	_beginthread(thread_up, 0, (void*)&arg_up);
+	func_arg arg_down = { cost_down , sad, row_length, column_length, d_max, p };
+	_beginthread(thread_down, 0, (void*)&arg_down);
+	//func_arg arg_45 = { cost_45 , sad, row_length, column_length, d_max, p / 1.4 };
+	//_beginthread(thread_45, 0, (void*)&arg_45);
+	//func_arg arg_135 = { cost_135 , sad, row_length, column_length, d_max, p / 1.4 };
+	//_beginthread(thread_135, 0, (void*)&arg_135);
+	//func_arg arg_225 = { cost_225 , sad, row_length, column_length, d_max, p / 1.4 };
+	//_beginthread(thread_225, 0, (void*)&arg_225);
+	//func_arg arg_315 = { cost_315 , sad, row_length, column_length, d_max, p / 1.4 };
+	//_beginthread(thread_315, 0, (void*)&arg_down);
+
+	//DP_search_forward(cost_forward, sad, row_length, column_length, d_max, p);
+	//DP_search_reverse(cost_reverse, sad, row_length, column_length, d_max, p);
+	//DP_search_up(cost_up, sad, row_length, column_length, d_max, p);
+	//DP_search_down(cost_down, sad, row_length, column_length, d_max, p);
 	DP_search_45(cost_45, sad, row_length, column_length, d_max, p/1.4);
 	DP_search_135(cost_135, sad, row_length, column_length, d_max, p / 1.4);
 	DP_search_225(cost_225, sad, row_length, column_length, d_max, p/1.4);
 	DP_search_315(cost_315, sad, row_length, column_length, d_max, p / 1.4);
-
 	for (int i = 0; i < row_length; i++) {
 		for (int j = 0; j < column_length; j++) {
 			for (int k = 0; k < d_max; k++) {

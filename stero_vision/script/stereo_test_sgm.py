@@ -34,7 +34,18 @@ class StereoVisionBM_SGM(StereoVisionBM_BT):
         sgm_search(self.cost_result, self.sad_left_result, self.sad_left_result.shape[0],
                     self.sad_left_result.shape[1], self.sad_left_result.shape[2], 0.5)
 
+
+
         self.sad_left_result = self.cost_result.copy()
+
+        '''
+        sgm_search(self.cost_result, self.sad_right_result, self.sad_right_result.shape[0],
+                   self.sad_right_result.shape[1], self.sad_right_result.shape[2], 0.5)
+
+        self.sad_right_result = self.cost_result.copy()
+        '''
+        return (self.sad_left_result, self.sad_right_result)
+
 
 if __name__ == '__main__':
     data_set = get_data_set(0)
@@ -44,10 +55,11 @@ if __name__ == '__main__':
     result = data_set['result']
     import time
 
-    window_size = 5
-    d_max = 20
+    window_size = 7
+    d_max = 32
     tt = time.time()
     stereo = StereoVisionBM_SGM(left, right, window_size, d_max)
+    stereo.low_texture_detection()
     stereo.compute_cost()
     stereo.aggregate_cost()
     my_result = stereo.get_result()
