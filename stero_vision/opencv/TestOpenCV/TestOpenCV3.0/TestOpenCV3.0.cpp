@@ -61,21 +61,23 @@ namespace {
 		bm->setPreFilterType(CV_STEREO_BM_NORMALIZED_RESPONSE);
 		//bm->setPreFilterSize(5);
 		bm->setPreFilterCap(63);
-		bm->setBlockSize(25);
+		bm->setBlockSize(15);
 		bm->setNumDisparities(numberOfDisparities);
 		bm->setTextureThreshold(20);
 		bm->setUniquenessRatio(15);
 		bm->setSpeckleWindowSize(100);
 		bm->setSpeckleRange(32);
-		bm->setDisp12MaxDiff(2);
+		//bm->setDisp12MaxDiff(2);
 		Mat left_p, right_p, dispp;
 		//copyMakeBorder(left, left_p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
 		//copyMakeBorder(right, right_p, 0, 0, numberOfDisparities, 0, IPL_BORDER_REPLICATE);
-		sgbm->setMode(StereoSGBM::MODE_SGBM_3WAY);
+		sgbm->setP1(3 * 15 * 15);
+		sgbm->setP2(4*3 * 15 * 15);
+		//sgbm->setMode(StereoSGBM::MODE_SGBM_3WAY);
 		sgbm->setUniquenessRatio(10);
 		sgbm->setSpeckleWindowSize(100);
 		sgbm->setSpeckleRange(32);
-		sgbm->setDisp12MaxDiff(2);
+		//sgbm->setDisp12MaxDiff(2);
 		
 		//sgbm->compute(left_p, right_p, dispp);
 		//disp = dispp.colRange(numberOfDisparities, left_p.cols);
