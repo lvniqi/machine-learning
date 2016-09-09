@@ -55,7 +55,7 @@ if __name__ == '__main__':
     result = data_set['result']
     import time
 
-    window_size = 7
+    window_size = 5
     d_max = 32
     tt = time.time()
     stereo = StereoVisionBM_SGM(left, right, window_size, d_max)

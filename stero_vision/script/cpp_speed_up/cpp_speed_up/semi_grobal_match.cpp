@@ -85,7 +85,10 @@ void __stdcall DP_search_forward(INT32 cost[], const  INT32 sad[], const INT32 r
 				for (int last_disparity = (d - d_diff < 0 ? 0 : d - d_diff); last_disparity < (d + d_diff + 1 < d_max ? d + d_diff + 1 : d_max); last_disparity++) {
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
-					int cost_disparity = p_i*disparity_diff;
+					int cost_disparity = p_i * disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 																		//代价合计
@@ -128,6 +131,9 @@ void __stdcall DP_search_reverse(INT32 cost[], const  INT32 sad[], const INT32 r
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 																  //代价合计
@@ -166,6 +172,9 @@ void __stdcall DP_search_down(INT32 cost[], const  INT32 sad[], const INT32 row_
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 					//代价合计
@@ -204,6 +213,9 @@ void __stdcall DP_search_up(INT32 cost[], const  INT32 sad[], const INT32 row_le
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 																  //代价合计
@@ -244,6 +256,9 @@ void __stdcall DP_search_45(INT32 cost[], const  INT32 sad[], const INT32 row_le
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 					//上一个代价的 位置
@@ -287,6 +302,9 @@ void __stdcall DP_search_135(INT32 cost[], const  INT32 sad[], const INT32 row_l
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 																  //上一个代价的 位置
@@ -330,6 +348,9 @@ void __stdcall DP_search_225(INT32 cost[], const  INT32 sad[], const INT32 row_l
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 					//上一个代价的 位置
@@ -373,6 +394,9 @@ void __stdcall DP_search_315(INT32 cost[], const  INT32 sad[], const INT32 row_l
 					//约束项
 					int disparity_diff = abs(d - last_disparity);
 					int cost_disparity = p_i *disparity_diff;
+					if (p_i > 1) {
+						cost_disparity *= 4;
+					}
 					// 代价等于 数据项 + 约束系数*约束项
 					int cost_now = 10 * sad[pos] + cost_disparity;//10用于减少float to int 损失
 																  //上一个代价的 位置
