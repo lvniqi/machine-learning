@@ -70,11 +70,11 @@ template<int RADIUS> void kernel_caller(const PtrStepSzb& left, const PtrStepSzb
 ```
 这就是为CUDA分配**线程**和**线程块**的函数。
 貌似是一个模板函数，然而没有泛型，所以也不算，猜测是为了节省资源而为之。
-* 单个线程处理的列数为**ROWSperTHREAD**(21)
-* 线程块处理的行数为**BLOCK_W**(128)
-* 线程块宽度为(行数-最大深度-窗口大小)/(单个线程处理的列数)
-* 线程块高度为(列数-窗口大小)/(线程块列数)
-然后分配内存为整个一行窗口缓冲(单块行数 + 深度* (单块行数+ 窗口大小))
+* 单个线程处理的行数为**ROWSperTHREAD**(21)
+* 线程块处理的数列为**BLOCK_W**(128)
+* 线程块宽度为(列数-最大深度-窗口大小)/(单个线程处理的列数)
+* 线程块高度为(行数-窗口大小)/(线程块列数)
+然后分配内存为整个一行窗口缓冲(单块列数 + 深度* (单块行数+ 窗口大小))
 **(限制！！TK1 中，最大为49152 bytes)**
 
 ## 核函数
@@ -164,5 +164,50 @@ __global__ void stereoKernel(unsigned char *left, unsigned char *right, size_t i
 * **col_ssd_cache** 为外部动态分配的shared memory
 * volatile unsigned int *col_ssd = col_ssd_cache + BLOCK_W + threadIdx.x;
 * X = 行号+ 最大深度+窗口大小/2
-* Y = 列号 * 单个线程处理的列数+ 窗口大小/2)
-* ssd图像位置 
+* x_tex = 列号+ 最大深度
+* Y = 行号 * 单个线程处理的行数+ 窗口大小/2
+* y_tex = 行号 * 单个线程处理的行数
+* ssd图像指针
+* disparImage 深度图像指针
+* end_row 终止行号
+#### 外层循环 深度d in range(0,maxdisp(64),STEREO_DISP_STEP(8))
+##### 初始化
+* **InitColSSD** 计算从y_tex至y_tex
+```CPP
+InitColSSD<RADIUS>(x_tex, y_tex, img_step, left, right, d, col_ssd);
+
+template<int RADIUS>
+        __device__ void InitColSSD(int x_tex, int y_tex, int im_pitch, unsigned char* imageL, unsigned char* imageR, int d, volatile unsigned int *col_ssd)
+        {
+            unsigned char leftPixel1;
+            int idx;
+            unsigned int diffa[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+            for(int i = 0; i < (2 * RADIUS + 1); i++)
+            {
+                idx = y_tex * im_pitch + x_tex;
+                leftPixel1 = imageL[idx];
+                idx = idx - d;
+
+                diffa[0] += SQ(leftPixel1 - imageR[idx - 0]);
+                diffa[1] += SQ(leftPixel1 - imageR[idx - 1]);
+                diffa[2] += SQ(leftPixel1 - imageR[idx - 2]);
+                diffa[3] += SQ(leftPixel1 - imageR[idx - 3]);
+                diffa[4] += SQ(leftPixel1 - imageR[idx - 4]);
+                diffa[5] += SQ(leftPixel1 - imageR[idx - 5]);
+                diffa[6] += SQ(leftPixel1 - imageR[idx - 6]);
+                diffa[7] += SQ(leftPixel1 - imageR[idx - 7]);
+
+                y_tex += 1;
+            }
+            //See above:  #define COL_SSD_SIZE (BLOCK_W + 2 * RADIUS)
+            col_ssd[0 * (BLOCK_W + 2 * RADIUS)] = diffa[0];
+            col_ssd[1 * (BLOCK_W + 2 * RADIUS)] = diffa[1];
+            col_ssd[2 * (BLOCK_W + 2 * RADIUS)] = diffa[2];
+            col_ssd[3 * (BLOCK_W + 2 * RADIUS)] = diffa[3];
+            col_ssd[4 * (BLOCK_W + 2 * RADIUS)] = diffa[4];
+            col_ssd[5 * (BLOCK_W + 2 * RADIUS)] = diffa[5];
+            col_ssd[6 * (BLOCK_W + 2 * RADIUS)] = diffa[6];
+            col_ssd[7 * (BLOCK_W + 2 * RADIUS)] = diffa[7];
+        
+```
