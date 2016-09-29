@@ -1,0 +1,208 @@
+#include "internal.hpp"
+using namespace cv;
+using namespace cv::cuda;
+
+//__device__ int cost_array[640*480*64];
+//__device__ int sum_array[640*480*64];
+
+
+const int THREADS_H = 16;
+const int THREADS_W = 32;
+const int WINDOW_H = 5;
+const int WINDOW_W = 7;
+/* kernels */
+//display_range threads per block * grid( nx * ny )
+__global__ void diff_kernel(const uchar* left,const uchar* __restrict__ right,uchar *cost_array)
+{
+	__shared__ uchar right_s[HEIGHT_SINGLE][WIDTH];
+	uchar value_left[HEIGHT_SINGLE];
+    const int y_base = (blockIdx.y*blockDim.y+threadIdx.y)*HEIGHT_SINGLE;
+	const int x = (blockIdx.x*blockDim.x+threadIdx.x)+D_MAX;
+	const int x_s = x<<1;
+	if (y_base < HEIGHT){
+		#pragma unroll
+		for(int y=0;y<HEIGHT_SINGLE;y++){
+			const int pos_left = (y_base+y) * WIDTH + x;
+			value_left[y] = left[pos_left];
+			right_s[y][x_s+1] = right[pos_left];
+			if(x == WIDTH-1){
+				right_s[y][x_s+2] = right[pos_left];
+			}else{
+				right_s[y][x_s+2] = (right[pos_left]+right[pos_left+1])/2;
+			}
+			if(x < 2 * D_MAX){
+				right_s[y][((x - D_MAX)<<1)+1] = right[pos_left - D_MAX];
+				if(x == D_MAX){
+					right_s[y][0] = right[pos_left - D_MAX];
+				}
+				right_s[y][((x - D_MAX)<<1)+2] = (right[pos_left - D_MAX]+right[pos_left - D_MAX+1])/2;
+			}
+		}
+		__syncthreads();
+		int right_pos,pos_l,pos_m,pos_r,right_max,right_min;
+		#pragma unroll
+		for(int disparity=0;disparity<D_MAX;disparity++){
+		    for(int y=0;y<HEIGHT_SINGLE;y++){			
+			    const int pos_left = (y_base+y) * WIDTH + x;
+			    const int value_left_t = value_left[y];
+			    if(x < WIDTH && y_base+y < HEIGHT) {
+				    //#pragma unroll
+					right_pos = ((x-disparity)<<1);
+					pos_l = right_s[y][right_pos-1];
+					pos_m = right_s[y][right_pos];
+					pos_r = right_s[y][right_pos+1];
+	
+					right_min = min(pos_m,pos_l);
+					right_min = min(right_min,pos_r);
+					right_max = max(pos_m,pos_l);
+					right_max = max(right_max,pos_r);
+
+				    int diff = max(0,value_left_t-right_max);
+				    diff = max(diff,right_min-value_left_t);
+				    cost_array[pos_left+FRAME_SIZE*disparity] = diff;
+				}
+			}
+		}
+	}
+}
+
+__global__ void diff_census_kernel(const uint* left_census,const uint*  right_census,uchar *cost_array)
+{
+	__shared__ uint right_s[HEIGHT_SINGLE][WIDTH];
+	uint value_left[HEIGHT_SINGLE];
+    const int y_base = (blockIdx.y*blockDim.y+threadIdx.y)*HEIGHT_SINGLE;
+	const int x = (blockIdx.x*blockDim.x+threadIdx.x)+D_MAX;
+	if (y_base < HEIGHT){
+		#pragma unroll
+		for(int y=0;y<HEIGHT_SINGLE;y++){
+			const int pos_left = (y_base+y) * WIDTH + x;
+			value_left[y] = left_census[pos_left];
+			right_s[y][x] = right_census[pos_left];
+			if(x < 2 * D_MAX){
+				right_s[y][(x-D_MAX)] = right_census[pos_left-D_MAX];
+			}
+		}
+		__syncthreads();
+		#pragma unroll
+		for(int disparity=0;disparity<D_MAX;disparity++){
+		    for(int y=0;y<HEIGHT_SINGLE;y++){			
+			    const int pos_left = (y_base+y) * WIDTH + x;
+			    const int pos_right = x-disparity;
+			    const uint value_left_t = value_left[y];
+			    const uint value_right_t = right_s[y][x-disparity];
+			    if(x < WIDTH && y_base+y < HEIGHT) {
+				    cost_array[pos_left+FRAME_SIZE*disparity] = 30-(__popc(value_left_t^value_right_t));
+				}
+			}
+		}
+	}
+}
+
+
+/*__global__ void sum_column_kernel(uchar *cost_array)
+{
+    const int d = blockIdx.x*blockDim.x+threadIdx.x;
+	const int y = blockIdx.y*blockDim.y+threadIdx.y;
+	const int pos_base = FRAME_SIZE*d+y*WIDTH;
+	int cached = cost_array[pos_base+D_MAX];
+	sum_array[pos_base+D_MAX] = cached;
+	if(y < HEIGHT && d < D_MAX){
+		for(int x=D_MAX+1;x< WIDTH;x++){
+			sum_array[pos_base+x] = cached + cost_array[pos_base+x];
+		}
+	}
+}
+
+__global__ void sum_row_kernel(uchar *cost_array)
+{
+    const int d = blockIdx.x*blockDim.x+threadIdx.x;
+	const int x = blockIdx.y*blockDim.y+threadIdx.y+D_MAX;
+	const int pos_base = FRAME_SIZE*d+x;
+	int cached = cost_array[pos_base];
+	if(x<WIDTH && d < D_MAX){
+		sum_array[pos_base] = cached;
+		for(int y=0;y < HEIGHT;y++){
+			cached += cost_array[pos_base+y*WIDTH];
+			sum_array[pos_base+y*WIDTH] = cached;
+		}
+	}
+}*/
+
+
+/*__global__ void diff_kernel(const uchar* left,const uchar* right)
+{
+    const int y = blockIdx.y*blockDim.y+threadIdx.y;
+    const int x = blockIdx.x*blockDim.x+threadIdx.x+D_MAX;
+	const int pos_left = y * WIDTH + x;
+    const int value_left = left[pos_left];
+    int real_disparity=0,last_diff = 255;
+    if(x < WIDTH && y < HEIGHT) {
+        #pragma unroll
+        for(int disparity=0;disparity<D_MAX;disparity++){
+            uchar value_right =  right[pos_left-disparity];
+            int diff = value_left - value_right;
+            cost_array[pos_left+FRAME_SIZE*disparity] = abs(diff);
+        }
+    }
+}*/ 
+
+__global__ void wta_kernel(uchar* dst, int width, int height,uchar* cost_array)
+{
+	
+    int y = blockIdx.y*blockDim.y+threadIdx.y;
+    int x = blockIdx.x*blockDim.x+threadIdx.x+D_MAX;
+    int pos = y * width + x;
+	if(x < width && y < height) {
+		int real_disparity = 0,min_cost = cost_array[pos];
+		for(int d=0;d<D_MAX;d++){
+			if(cost_array[pos+width*height*d] < min_cost){
+				min_cost = cost_array[pos+width*height*d];
+				real_disparity = d;
+			}
+		}
+		dst[pos] = real_disparity;
+	}
+}
+
+extern "C" void diff_caller(const uchar* left,const uchar* right, uchar* dst,
+                            uchar* cost_array,
+                            uint* left_census,
+                            uint* right_census,
+                            int width, int height)
+{
+    census_caller(left,left_census,width,height);
+    census_caller(right,right_census,width,height);
+    cudaThreadSynchronize();
+    /*{
+		dim3 block(width-D_MAX,1);
+		dim3 grid(1,CELL_DIV(height,(HEIGHT_SINGLE*block.y)));
+		diff_kernel<<<grid,block>>>(left,right,cost_array);
+		cudaThreadSynchronize();
+	}*/
+	{
+		dim3 block(width-D_MAX,1);
+		dim3 grid(1,CELL_DIV(height,(HEIGHT_SINGLE*block.y)));
+		diff_census_kernel<<<grid,block>>>(left_census,right_census,cost_array);
+		cudaThreadSynchronize();
+	}
+	/*
+	{
+		dim3 block(D_MAX,16);
+		dim3 grid(1,CELL_DIV(height,block.y));
+		sum_column_kernel<<<grid,block>>>(cost_array);
+		cudaThreadSynchronize();
+	}
+	{
+		dim3 block(1,WIDTH);
+		dim3 grid(D_MAX,1);
+		sum_row_kernel<<<grid,block>>>(cost_array);
+		cudaThreadSynchronize();
+	}*/
+	{
+		dim3 block(32,32);
+		dim3 grid(CELL_DIV(width-D_MAX,block.x),CELL_DIV(height,block.y));
+		wta_kernel<<<grid,block>>>(dst,width,height,cost_array);
+
+		cudaThreadSynchronize();
+	}
+}
