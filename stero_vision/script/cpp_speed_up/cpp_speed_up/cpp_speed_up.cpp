@@ -603,3 +603,83 @@ void __stdcall aggregate_cost_window(INT32 result[], INT16 diff[], const INT32 d
 		delete(integral_result);
 	}
 }
+
+__inline void  get_low_texture_cost_core(UINT8& last_count, bool& last_texture, UINT8 result[], INT16 low_texture[],int pos) {
+	int value = 0;
+	if (low_texture[pos] > 5) {
+		if (last_texture) {
+			last_count++;
+			value = last_count;
+		}
+		else {
+			last_texture = true;
+		}
+	}
+	else {
+		last_texture = false;
+		last_count = 0;
+	}
+}
+
+
+//为低纹理区设计的左侧匹配算法
+void __stdcall get_low_texture_cost_l(UINT8 result[], INT16 low_texture[], const INT32 shapes[]) {
+	//row size
+	int row_length = shapes[0];
+	//column size
+	int column_length = shapes[1];
+	for (int row = 0; row < row_length; row++) {
+		UINT8 last_count = 0;
+		bool last_texture = false;
+		for (int column = 0; column < column_length; column++) {
+			int pos = row*column_length + column;
+			int value = 0;
+			if (low_texture[pos] > 5) {
+				if (last_texture) {
+					last_count++;
+					value = last_count;
+				}
+				else {
+					last_texture = true;
+				}
+			}
+			else {
+				last_texture = false;
+				last_count = 0;
+			}
+			result[pos] = value;
+		}
+	}
+
+}
+
+//为低纹理区设计的右侧匹配算法
+void __stdcall get_low_texture_cost_r(UINT8 result[], INT16 low_texture[], const INT32 shapes[]) {
+	//row size
+	int row_length = shapes[0];
+	//column size
+	int column_length = shapes[1];
+	for (int row = 0; row < row_length; row++) {
+		UINT8 last_count = 0;
+		bool last_texture = false;
+		for (int column = column_length-1; column >= 0; column--) {
+			int pos = row*column_length + column;
+			int value = 0;
+			if (low_texture[pos] > 5) {
+				if (last_texture) {
+					last_count++;
+					value = last_count;
+				}
+				else {
+					last_texture = true;
+				}
+			}
+			else {
+				last_texture = false;
+				last_count = 0;
+			}
+			result[pos] = value;
+		}
+	}
+
+}
