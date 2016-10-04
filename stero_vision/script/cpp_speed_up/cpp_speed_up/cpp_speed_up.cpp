@@ -623,18 +623,30 @@ __inline void  get_low_texture_cost_core(UINT8& last_count, bool& last_texture, 
 
 
 //为低纹理区设计的左侧匹配算法
-void __stdcall get_low_texture_cost_l(UINT8 result[], INT16 low_texture[], const INT32 shapes[]) {
+void __stdcall get_low_texture_cost_l(INT16 result[], INT16 low_texture[], const INT32 shapes[]) {
 	//row size
 	int row_length = shapes[0];
 	//column size
 	int column_length = shapes[1];
 	for (int row = 0; row < row_length; row++) {
-		UINT8 last_count = 0;
+		int last_count = 0;
 		bool last_texture = false;
-		for (int column = 0; column < column_length; column++) {
+		//为防止一开始就是低纹理区造成错误
+		int start_pos = 5;
+		//搜索非低纹理区
+		while (start_pos < column_length) {
+			int pos = row*column_length + start_pos;
+			if (low_texture[start_pos] > 0) {
+				start_pos++;
+			}
+			else {
+				break;
+			}
+		}
+		for (int column = start_pos; column < column_length; column++) {
 			int pos = row*column_length + column;
 			int value = 0;
-			if (low_texture[pos] > 5) {
+			if (low_texture[pos] > 0) {
 				if (last_texture) {
 					last_count++;
 					value = last_count;
@@ -654,7 +666,7 @@ void __stdcall get_low_texture_cost_l(UINT8 result[], INT16 low_texture[], const
 }
 
 //为低纹理区设计的右侧匹配算法
-void __stdcall get_low_texture_cost_r(UINT8 result[], INT16 low_texture[], const INT32 shapes[]) {
+void __stdcall get_low_texture_cost_r(INT16 result[], INT16 low_texture[], const INT32 shapes[]) {
 	//row size
 	int row_length = shapes[0];
 	//column size
@@ -665,7 +677,7 @@ void __stdcall get_low_texture_cost_r(UINT8 result[], INT16 low_texture[], const
 		for (int column = column_length-1; column >= 0; column--) {
 			int pos = row*column_length + column;
 			int value = 0;
-			if (low_texture[pos] > 5) {
+			if (low_texture[pos] > 0) {
 				if (last_texture) {
 					last_count++;
 					value = last_count;

@@ -316,11 +316,17 @@ class StereoVisionBM2:
         """
         func = low_texture_detection_cpp_func(self.dll)
         self.low_texture_column = np.zeros(self.left.shape, np.int16)
+        self.low_texture_column_r =np.zeros(self.left.shape, np.int16)
         self.low_texture_row = np.zeros(self.left.shape, np.int16)
+        self.low_texture_row_r = np.zeros(self.left.shape, np.int16)
         low_texture_detection_cpp(func, self.low_texture_row, self.low_texture_column, self.left, self.window_size,
                                   int(self.window_size * texture_range))
-        self.low_texture_column = filters.median_filter(self.low_texture_column, 11)
-        self.low_texture_row = filters.median_filter(self.low_texture_row, 11)
+        low_texture_detection_cpp(func, self.low_texture_row_r, self.low_texture_column_r, self.right, self.window_size,
+                                  int(self.window_size * texture_range))
+
+        #self.low_texture_column = filters.median_filter(self.low_texture_column, 11)
+        #self.low_texture_row = filters.median_filter(self.low_texture_row, 11)
+
         # return self.low_texture_column.copy()
         return (self.low_texture_row.copy(), self.low_texture_column.copy())
 

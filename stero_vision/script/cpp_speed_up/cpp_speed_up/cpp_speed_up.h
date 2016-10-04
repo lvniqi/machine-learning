@@ -30,6 +30,13 @@ extern "C" _declspec(dllexport) INT16 __stdcall get_hamming_distance(const BOOLE
 //计算单点代价 census版本
 extern "C" _declspec(dllexport) void __stdcall compute_cost_census_d(INT16 result[], BOOLEAN left[], BOOLEAN right[], const INT16 strides[], const INT16 shapes[]);
 
+
+/*-------------低纹理区-------------*/
+//为低纹理区设计的右侧匹配算法
+extern "C" _declspec(dllexport) void __stdcall get_low_texture_cost_r(INT16 result[], INT16 low_texture[], const INT32 shapes[]);
+//为低纹理区设计的左侧匹配算法
+extern "C" _declspec(dllexport) void __stdcall get_low_texture_cost_l(INT16 result[], INT16 low_texture[], const INT32 shapes[]);
+
 /*-------------低纹理区域检测-------------*/
 extern "C" _declspec(dllexport) void __stdcall low_texture_detection(INT16 row_result[], INT16 column_result[], const INT16 image[], const INT32 strides[], const INT32 shapes[], const INT32 window_size, const INT32 texture_range);
 //代价聚合 使用低纹理区域检测获得的窗口
